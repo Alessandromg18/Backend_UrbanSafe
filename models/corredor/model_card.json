@@ -1,0 +1,521 @@
+{
+  "nombre": "urbansafe-demanda-corredor",
+  "version": "1.0.0",
+  "sistema": "corredor",
+  "titulo": "Corredores Complementarios",
+  "grano": "ruta",
+  "series": [
+    "201",
+    "204",
+    "206",
+    "209",
+    "301",
+    "305",
+    "370",
+    "371",
+    "404",
+    "405",
+    "406",
+    "412"
+  ],
+  "n_series": 12,
+  "objetivo": "validaciones (abordajes registrados) por unidad y hora, horizonte 24 h, contexto hasta el día previo 23:00",
+  "pronostico": {
+    "modelo_principal": "ensemble",
+    "modelos": {
+      "lightgbm": {
+        "tipo": "lightgbm",
+        "archivo": "lightgbm.txt",
+        "n_estimators": 126,
+        "parametros": {
+          "objective": "tweedie",
+          "tweedie_variance_power": 1.2,
+          "learning_rate": 0.05,
+          "num_leaves": 63,
+          "min_child_samples": 40,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.9,
+          "reg_lambda": 1.0,
+          "random_state": 0,
+          "n_jobs": -1,
+          "verbosity": -1
+        },
+        "features": [
+          "serie",
+          "hora",
+          "dow",
+          "fer",
+          "fer_prev",
+          "fer_next",
+          "fer_lag7",
+          "paro_prev",
+          "paro_lag7",
+          "lag24",
+          "lag48",
+          "lag168",
+          "lag336",
+          "m4s",
+          "s4s",
+          "nivel1",
+          "nivel7"
+        ],
+        "entrenamiento": "global por sistema, objetivo Tweedie, lags >= 24 h (sin recursión)"
+      },
+      "chronos2": {
+        "tipo": "foundation_zero_shot",
+        "repo": "amazon/chronos-2",
+        "revision": "29ec3766d36d6f73f0696f85560a422f50e8498c",
+        "contexto_horas": 2048,
+        "covariables": {
+          "feriado": "pasada y futura"
+        },
+        "pesos": "no versionados en git (478 MB); se descargan de Hugging Face con la revisión fija"
+      },
+      "chronos_bolt": {
+        "tipo": "foundation_zero_shot",
+        "repo": "amazon/chronos-bolt-small",
+        "revision": "772f3d25d38aec6d914c8949dab4462e2d46f5d8",
+        "contexto_dias": 60,
+        "pesos": "Hugging Face, revisión fija (191 MB)"
+      },
+      "autoets": {
+        "tipo": "statsforecast",
+        "modelo": "AutoETS(season_length=24)",
+        "ventana_dias": 56,
+        "nota": "se reajusta en cada pronóstico con la ventana indicada"
+      },
+      "mstl": {
+        "tipo": "statsforecast",
+        "modelo": "MSTL([24, 168], trend=AutoETS(ZZN))",
+        "ventana_dias": 56,
+        "nota": "se reajusta en cada pronóstico con la ventana indicada"
+      },
+      "media_4sem": {
+        "tipo": "baseline",
+        "definicion": "media de la misma hora en los 4 mismos días previos"
+      }
+    },
+    "ensemble": {
+      "miembros": [
+        "lightgbm",
+        "chronos2",
+        "chronos_bolt"
+      ],
+      "pesos": "promedio simple"
+    },
+    "seleccion": "menor WMAPE en validación 15–31 oct 2025 (no en test)",
+    "modo_ligero": {
+      "modelo": "lightgbm",
+      "wmape_test": 0.1132045813262369,
+      "mae_test": 86.20738291313357,
+      "dm_p_vs_principal": 0.2833294965839034,
+      "uso": "sin torch/Chronos; inferencia en milisegundos; para servidores con poca memoria o latencia estricta"
+    }
+  },
+  "protocolo": {
+    "validacion": [
+      "2025-10-15",
+      "2025-10-31"
+    ],
+    "test": [
+      "2025-11-01",
+      "2025-12-31"
+    ],
+    "rolling_origin": "diario",
+    "refit_lightgbm_dias": 7
+  },
+  "metricas_test": {
+    "principal": {
+      "todos": {
+        "sistema": "corredor",
+        "modelo": "ensemble",
+        "estrato": "todos",
+        "n_dias": 61,
+        "MAE": 91.07839652504224,
+        "RMSE": 178.74470058942822,
+        "WMAPE": 0.1196010294950226,
+        "MASE": 0.8072434142011876,
+        "WQL": null
+      },
+      "normales": {
+        "sistema": "corredor",
+        "modelo": "ensemble",
+        "estrato": "normales",
+        "n_dias": 54,
+        "MAE": 73.6083008851074,
+        "RMSE": 131.67983018610406,
+        "WMAPE": 0.0923256082177759,
+        "MASE": 0.6738359610403447,
+        "WQL": null
+      },
+      "atipicos": {
+        "sistema": "corredor",
+        "modelo": "ensemble",
+        "estrato": "atipicos",
+        "n_dias": 7,
+        "MAE": 225.8477057473968,
+        "RMSE": 380.3367967461096,
+        "WMAPE": 0.4649630015887389,
+        "MASE": 1.8363866242991176,
+        "WQL": null
+      }
+    },
+    "mejor_baseline": {
+      "sistema": "corredor",
+      "modelo": "media_4sem",
+      "estrato": "todos",
+      "n_dias": 61,
+      "MAE": 127.13063524590164,
+      "RMSE": 296.49519265913824,
+      "WMAPE": 0.1669435940452179,
+      "MASE": 1.0932399915215014,
+      "WQL": null
+    },
+    "diebold_mariano_vs": [
+      {
+        "sistema": "corredor",
+        "ganador": "ensemble",
+        "vs": "naive_7d",
+        "dm_stat": -3.650174846546944,
+        "p_valor": 0.0005511138194659
+      },
+      {
+        "sistema": "corredor",
+        "ganador": "ensemble",
+        "vs": "hora_media",
+        "dm_stat": -8.985951140805042,
+        "p_valor": 1.0422745197209745e-12
+      },
+      {
+        "sistema": "corredor",
+        "ganador": "ensemble",
+        "vs": "media_4sem",
+        "dm_stat": -3.175223290055587,
+        "p_valor": 0.0023639836485592
+      },
+      {
+        "sistema": "corredor",
+        "ganador": "ensemble",
+        "vs": "autoets",
+        "dm_stat": -8.467363561188812,
+        "p_valor": 7.847776046087521e-12
+      },
+      {
+        "sistema": "corredor",
+        "ganador": "ensemble",
+        "vs": "mstl",
+        "dm_stat": -5.203596661628919,
+        "p_valor": 2.4986688794865863e-06
+      },
+      {
+        "sistema": "corredor",
+        "ganador": "ensemble",
+        "vs": "lightgbm",
+        "dm_stat": 1.0825732055776034,
+        "p_valor": 0.2833294965839034
+      },
+      {
+        "sistema": "corredor",
+        "ganador": "ensemble",
+        "vs": "chronos_bolt",
+        "dm_stat": -3.863653446341307,
+        "p_valor": 0.0002766421770352
+      },
+      {
+        "sistema": "corredor",
+        "ganador": "ensemble",
+        "vs": "chronos2",
+        "dm_stat": -0.7027743270343864,
+        "p_valor": 0.4849142569165873
+      }
+    ]
+  },
+  "intervalos_80": [
+    {
+      "sistema": "corredor",
+      "modelo": "ensemble",
+      "intervalo": "conformal",
+      "cobertura": 0.8041894353369763,
+      "ancho_rel": 0.4590338098647952
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "ensemble",
+      "intervalo": "proxy_15pct",
+      "cobertura": 0.5079690346083788,
+      "ancho_rel": 0.3084759293654751
+    }
+  ],
+  "aforo_test": [
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_naive_7d",
+      "accuracy": 0.8866120218579235,
+      "balanced_acc": 0.8650866896998046,
+      "f1_weighted": 0.8877434241901693,
+      "f1_macro": 0.8517470236468455,
+      "f1_Asientos": 0.9370305635599224,
+      "f1_De_pie": 0.8115141955835962,
+      "f1_Saturado": 0.8066963117970181,
+      "eta_mae_min": 0.1730646630236794,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_media_4sem",
+      "accuracy": 0.9023793260473588,
+      "balanced_acc": 0.8884716062796327,
+      "f1_weighted": 0.9037920104295476,
+      "f1_macro": 0.8713887044676266,
+      "f1_Asientos": 0.9459973378969386,
+      "f1_De_pie": 0.8411908247925818,
+      "f1_Saturado": 0.8269779507133592,
+      "eta_mae_min": 0.1528346994535519,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_autoets",
+      "accuracy": 0.7572290528233151,
+      "balanced_acc": 0.7365521421545301,
+      "f1_weighted": 0.7643906921021375,
+      "f1_macro": 0.7249804707021691,
+      "f1_Asientos": 0.8377578209809533,
+      "f1_De_pie": 0.6269083117578788,
+      "f1_Saturado": 0.7102752793676751,
+      "eta_mae_min": 0.3340391621129326,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_mstl",
+      "accuracy": 0.8729508196721312,
+      "balanced_acc": 0.8531471656538209,
+      "f1_weighted": 0.8749547897081329,
+      "f1_macro": 0.846016307848764,
+      "f1_Asientos": 0.9216211049512522,
+      "f1_De_pie": 0.7940648331915698,
+      "f1_Saturado": 0.8223629854034701,
+      "eta_mae_min": 0.1805441712204007,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_lightgbm",
+      "accuracy": 0.9344831511839709,
+      "balanced_acc": 0.9200475973098438,
+      "f1_weighted": 0.9349857605014544,
+      "f1_macro": 0.9123855008020718,
+      "f1_Asientos": 0.965893587994543,
+      "f1_De_pie": 0.8872283944548225,
+      "f1_Saturado": 0.88403451995685,
+      "eta_mae_min": 0.0945013661202185,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_chronos_bolt",
+      "accuracy": 0.8940687613843351,
+      "balanced_acc": 0.8677769703437764,
+      "f1_weighted": 0.8951611973211383,
+      "f1_macro": 0.8649043651082026,
+      "f1_Asientos": 0.9388450078040014,
+      "f1_De_pie": 0.8248076923076924,
+      "f1_Saturado": 0.831060395212914,
+      "eta_mae_min": 0.1553051001821494,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_chronos2",
+      "accuracy": 0.9072176684881604,
+      "balanced_acc": 0.8998822660085182,
+      "f1_weighted": 0.908896550760847,
+      "f1_macro": 0.8898664975498627,
+      "f1_Asientos": 0.9426378896882494,
+      "f1_De_pie": 0.847202632816173,
+      "f1_Saturado": 0.8797589701451657,
+      "eta_mae_min": 0.1262978142076503,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_ensemble",
+      "accuracy": 0.926571038251366,
+      "balanced_acc": 0.9099661507636928,
+      "f1_weighted": 0.9272785735530628,
+      "f1_macro": 0.9056999139662156,
+      "f1_Asientos": 0.9590670884283083,
+      "f1_De_pie": 0.8753387533875339,
+      "f1_Saturado": 0.8826939000828044,
+      "eta_mae_min": 0.1043602003642987,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "mayoritaria",
+      "accuracy": 0.6112818761384335,
+      "balanced_acc": 0.3333333333333333,
+      "f1_weighted": 0.4638115001837452,
+      "f1_macro": 0.2529174173643739,
+      "f1_Asientos": 0.7587522520931218,
+      "f1_De_pie": 0.0,
+      "f1_Saturado": 0.0,
+      "eta_mae_min": 0.6231102003642989,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "moda_historica",
+      "accuracy": 0.9238387978142076,
+      "balanced_acc": 0.8877751973335695,
+      "f1_weighted": 0.9238811060684762,
+      "f1_macro": 0.8914336076108834,
+      "f1_Asientos": 0.9632877734757662,
+      "f1_De_pie": 0.8691460055096418,
+      "f1_Saturado": 0.8418670438472419,
+      "eta_mae_min": 0.1140710382513661,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "histgb_directo",
+      "accuracy": 0.9209357923497268,
+      "balanced_acc": 0.9103730937201904,
+      "f1_weighted": 0.9219485857894776,
+      "f1_macro": 0.8898312098817834,
+      "f1_Asientos": 0.9628510738730234,
+      "f1_De_pie": 0.8624899919935949,
+      "f1_Saturado": 0.844152563778732,
+      "eta_mae_min": 0.1201844262295082,
+      "n": 17568
+    }
+  ],
+  "regla_u_test": [
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_naive_7d",
+      "acuerdo": 0.9579348816029144,
+      "balanced_acc": 0.9108176335045992,
+      "f1_macro": 0.8915479451234316,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_media_4sem",
+      "acuerdo": 0.962033242258652,
+      "balanced_acc": 0.925808981078484,
+      "f1_macro": 0.9028275514891562,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_autoets",
+      "acuerdo": 0.9394922586520948,
+      "balanced_acc": 0.8421347762769368,
+      "f1_macro": 0.8382469287803513,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_mstl",
+      "acuerdo": 0.963285519125683,
+      "balanced_acc": 0.9018268619764832,
+      "f1_macro": 0.9009450223002116,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_lightgbm",
+      "acuerdo": 0.975523679417122,
+      "balanced_acc": 0.9443255864791076,
+      "f1_macro": 0.9351762265050892,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_chronos_bolt",
+      "acuerdo": 0.9654485428051002,
+      "balanced_acc": 0.9030326752658148,
+      "f1_macro": 0.905908411473242,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_chronos2",
+      "acuerdo": 0.9750113843351548,
+      "balanced_acc": 0.93597616436291,
+      "f1_macro": 0.9329079113072978,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "cascada_ensemble",
+      "acuerdo": 0.9758082877959928,
+      "balanced_acc": 0.9347099009609884,
+      "f1_macro": 0.934603701223454,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "mayoritaria",
+      "acuerdo": 0.8969148451730419,
+      "balanced_acc": 0.5,
+      "f1_macro": 0.4728282070517629,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "moda_historica",
+      "acuerdo": 0.9681807832422586,
+      "balanced_acc": 0.9033340146966312,
+      "f1_macro": 0.9120888651089633,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "histgb_directo",
+      "acuerdo": 0.9648793260473588,
+      "balanced_acc": 0.9462111919476104,
+      "f1_macro": 0.9121811669007528,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    },
+    {
+      "sistema": "corredor",
+      "modelo": "siempre_abordar",
+      "acuerdo": 0.8969148451730419,
+      "balanced_acc": 0.5,
+      "f1_macro": 0.4728282070517629,
+      "pct_no_abordar_real": 0.1030851548269581,
+      "n": 17568
+    }
+  ],
+  "eta": {
+    "definicion": "headway(bucket) × factor(clase) con factores 1.0/1.1/1.3",
+    "mae_proxy_min": 0.1043602003642987,
+    "nota": "sin GPS/AVL no hay llegadas reales: el MAE mide el error del ETA inducido por el modelo (clase predicha vs clase observada), no contra llegadas reales"
+  },
+  "criterios_aceptacion": {
+    "RNF-01 (accuracy >= 0.75 y F1-macro >= 0.72)": true,
+    "AC-02 (F1 >= 0.72 en las 3 clases)": true,
+    "AC-03 (recomendación correcta >= 80 %)": true
+  },
+  "limitaciones": [
+    "validaciones = abordajes, no ocupación a bordo; el aforo es un proxy de presión (crowding_index)",
+    "umbrales p60/p90 por franja: 'Saturado' es relativo a la franja (ver aforo_sensibilidad_umbrales.csv)",
+    "un solo año de historia (2025); feriados móviles 2026 tomados del calendario oficial",
+    "paros de transportistas no se anticipan: el detector de anomalías los marca después"
+  ]
+}

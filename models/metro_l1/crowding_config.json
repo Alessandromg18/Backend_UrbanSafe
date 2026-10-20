@@ -1,0 +1,63 @@
+{
+  "sistema": "metro_l1",
+  "umbrales": {
+    "noche": {
+      "thr_mid": 0.033437638888888885,
+      "thr_hi": 0.10187201388888893
+    },
+    "punta_am": {
+      "thr_mid": 0.10085104166666667,
+      "thr_hi": 0.17370434027777776
+    },
+    "punta_pm": {
+      "thr_mid": 0.0996320833333333,
+      "thr_hi": 0.2584114236111111
+    },
+    "valle": {
+      "thr_mid": 0.0779279861111111,
+      "thr_hi": 0.15874812500000005
+    }
+  },
+  "headway_min": {
+    "LAB": 3.5,
+    "SAB": 6.5,
+    "DOM": 9.0
+  },
+  "cap_vehiculo": 1200.0,
+  "orden_upstream": [
+    "Bayovar",
+    "Santa Rosa",
+    "San Martin",
+    "San Carlos",
+    "Los Postes",
+    "Los Jardines",
+    "Piramides Del Sol",
+    "Caja De Agua",
+    "Presbitero Maestro",
+    "El Angel",
+    "Miguel Grau",
+    "Gamarra",
+    "Nicolas Arriola",
+    "La Cultura",
+    "San Borja Sur",
+    "Angamos",
+    "Cabitos",
+    "Ayacucho",
+    "Jorge Chavez",
+    "Atocongo",
+    "San Juan",
+    "Maria Auxiliadora",
+    "Villa Maria",
+    "Pumacahua",
+    "Parque Industrial",
+    "Villa El Salvador"
+  ],
+  "alpha_upstream": 0.3,
+  "k_upstream": 2,
+  "clases": [
+    "Asientos",
+    "De_pie",
+    "Saturado"
+  ],
+  "definicion": "crowding = val/Cap_hora + alpha*mean(val k previas)/Cap_hora; Cap_hora = cap_vehiculo*60/headway(bucket); umbrales p60/p90 por franja en train"
+}

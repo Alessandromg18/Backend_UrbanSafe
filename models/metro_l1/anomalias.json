@@ -1,0 +1,64 @@
+{
+  "detector": "residuo diario del sistema vs media de las 4 semanas previas, z robusto (mediana/MAD)",
+  "ventana_dias": 56,
+  "umbral_z": 3.0,
+  "referencia": {
+    "mediana": 0.03241972333868341,
+    "mad": 0.03951431437527108,
+    "desde": "2025-11-06",
+    "hasta": "2025-12-31"
+  },
+  "isolation_forest": {
+    "archivo": "isolation_forest.joblib",
+    "features": [
+      "Validaciones",
+      "hora_n",
+      "dow",
+      "mes",
+      "Headway_Min",
+      "Ocupacion_proxy"
+    ],
+    "umbral_score": 0.5932877388535113
+  },
+  "evaluacion_2025": [
+    {
+      "sistema": "metro_l1",
+      "detector": "residuo_media4sem_zrobusto",
+      "n_dias": 320,
+      "n_pos": 22,
+      "pr_auc": 0.594749201244948,
+      "roc_auc": 0.9209884075655888,
+      "precision_at_k": 0.5909090909090909,
+      "umbral": 3.0,
+      "precision": 0.32,
+      "recall": 0.7272727272727273,
+      "f1": 0.4444444444444444
+    },
+    {
+      "sistema": "metro_l1",
+      "detector": "z_total_mismo_dow",
+      "n_dias": 334,
+      "n_pos": 23,
+      "pr_auc": 0.5903769698936506,
+      "roc_auc": 0.9222703760659864,
+      "precision_at_k": 0.5652173913043478,
+      "umbral": 2.0,
+      "precision": 0.5882352941176471,
+      "recall": 0.4347826086956521,
+      "f1": 0.5
+    },
+    {
+      "sistema": "metro_l1",
+      "detector": "isolation_forest_w08",
+      "n_dias": 334,
+      "n_pos": 23,
+      "pr_auc": 0.4075043136827266,
+      "roc_auc": 0.6295959737173215,
+      "precision_at_k": 0.391304347826087,
+      "umbral": 0.1161324786324785,
+      "precision": 0.5294117647058824,
+      "recall": 0.391304347826087,
+      "f1": 0.45
+    }
+  ]
+}
