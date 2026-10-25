@@ -1,0 +1,36 @@
+{
+  "sistema": "corredor",
+  "umbrales": {
+    "noche": {
+      "thr_mid": 0.15208333333333332,
+      "thr_hi": 1.625
+    },
+    "punta_am": {
+      "thr_mid": 2.9218333333333337,
+      "thr_hi": 6.114166666666665
+    },
+    "punta_pm": {
+      "thr_mid": 2.5924999999999994,
+      "thr_hi": 5.325
+    },
+    "valle": {
+      "thr_mid": 2.0479166666666666,
+      "thr_hi": 4.045833333333333
+    }
+  },
+  "headway_min": {
+    "LAB": 10.0,
+    "SAB": 12.0,
+    "DOM": 12.0
+  },
+  "cap_vehiculo": 80.0,
+  "orden_upstream": [],
+  "alpha_upstream": 0.3,
+  "k_upstream": 2,
+  "clases": [
+    "Asientos",
+    "De_pie",
+    "Saturado"
+  ],
+  "definicion": "crowding = val/Cap_hora + alpha*mean(val k previas)/Cap_hora; Cap_hora = cap_vehiculo*60/headway(bucket); umbrales p60/p90 por franja en train"
+}

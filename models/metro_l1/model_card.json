@@ -1,0 +1,535 @@
+{
+  "nombre": "urbansafe-demanda-metro_l1",
+  "version": "1.0.0",
+  "sistema": "metro_l1",
+  "titulo": "Metro Línea 1",
+  "grano": "estacion",
+  "series": [
+    "Angamos",
+    "Atocongo",
+    "Ayacucho",
+    "Bayóvar",
+    "Cabitos",
+    "Caja de Agua",
+    "El Ángel",
+    "Gamarra",
+    "Jorge Chavez",
+    "La Cultura",
+    "Los Jardines",
+    "Los Postes",
+    "Maria Auxiliadora",
+    "Miguel Grau",
+    "Nicolas Arriola",
+    "Parque Industrial",
+    "Piramides del Sol",
+    "Presbitero Maestro",
+    "Pumacahua",
+    "San Borja Sur",
+    "San Carlos",
+    "San Juan",
+    "San Martin",
+    "Santa Rosa",
+    "Villa El Salvador",
+    "Villa Maria"
+  ],
+  "n_series": 26,
+  "objetivo": "validaciones (abordajes registrados) por unidad y hora, horizonte 24 h, contexto hasta el día previo 23:00",
+  "pronostico": {
+    "modelo_principal": "ensemble",
+    "modelos": {
+      "lightgbm": {
+        "tipo": "lightgbm",
+        "archivo": "lightgbm.txt",
+        "n_estimators": 459,
+        "parametros": {
+          "objective": "tweedie",
+          "tweedie_variance_power": 1.2,
+          "learning_rate": 0.05,
+          "num_leaves": 63,
+          "min_child_samples": 40,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.9,
+          "reg_lambda": 1.0,
+          "random_state": 0,
+          "n_jobs": -1,
+          "verbosity": -1
+        },
+        "features": [
+          "serie",
+          "hora",
+          "dow",
+          "fer",
+          "fer_prev",
+          "fer_next",
+          "fer_lag7",
+          "paro_prev",
+          "paro_lag7",
+          "lag24",
+          "lag48",
+          "lag168",
+          "lag336",
+          "m4s",
+          "s4s",
+          "nivel1",
+          "nivel7"
+        ],
+        "entrenamiento": "global por sistema, objetivo Tweedie, lags >= 24 h (sin recursión)"
+      },
+      "chronos2": {
+        "tipo": "foundation_zero_shot",
+        "repo": "amazon/chronos-2",
+        "revision": "29ec3766d36d6f73f0696f85560a422f50e8498c",
+        "contexto_horas": 2048,
+        "covariables": {
+          "feriado": "pasada y futura"
+        },
+        "pesos": "no versionados en git (478 MB); se descargan de Hugging Face con la revisión fija"
+      },
+      "chronos_bolt": {
+        "tipo": "foundation_zero_shot",
+        "repo": "amazon/chronos-bolt-small",
+        "revision": "772f3d25d38aec6d914c8949dab4462e2d46f5d8",
+        "contexto_dias": 60,
+        "pesos": "Hugging Face, revisión fija (191 MB)"
+      },
+      "autoets": {
+        "tipo": "statsforecast",
+        "modelo": "AutoETS(season_length=24)",
+        "ventana_dias": 56,
+        "nota": "se reajusta en cada pronóstico con la ventana indicada"
+      },
+      "mstl": {
+        "tipo": "statsforecast",
+        "modelo": "MSTL([24, 168], trend=AutoETS(ZZN))",
+        "ventana_dias": 56,
+        "nota": "se reajusta en cada pronóstico con la ventana indicada"
+      },
+      "media_4sem": {
+        "tipo": "baseline",
+        "definicion": "media de la misma hora en los 4 mismos días previos"
+      }
+    },
+    "ensemble": {
+      "miembros": [
+        "lightgbm",
+        "chronos2",
+        "mstl"
+      ],
+      "pesos": "promedio simple"
+    },
+    "seleccion": "menor WMAPE en validación 15–31 oct 2025 (no en test)",
+    "modo_ligero": {
+      "modelo": "lightgbm",
+      "wmape_test": 0.0996436257171551,
+      "mae_test": 93.06028256981683,
+      "dm_p_vs_principal": 0.4966540808081923,
+      "uso": "sin torch/Chronos; inferencia en milisegundos; para servidores con poca memoria o latencia estricta"
+    }
+  },
+  "protocolo": {
+    "validacion": [
+      "2025-10-15",
+      "2025-10-31"
+    ],
+    "test": [
+      "2025-11-01",
+      "2025-12-31"
+    ],
+    "rolling_origin": "diario",
+    "refit_lightgbm_dias": 7
+  },
+  "metricas_test": {
+    "principal": {
+      "todos": {
+        "sistema": "metro_l1",
+        "modelo": "ensemble",
+        "estrato": "todos",
+        "n_dias": 61,
+        "MAE": 95.35098149116722,
+        "RMSE": 252.55699777673436,
+        "WMAPE": 0.1020963750495944,
+        "MASE": 0.9520559805837684,
+        "WQL": null
+      },
+      "normales": {
+        "sistema": "metro_l1",
+        "modelo": "ensemble",
+        "estrato": "normales",
+        "n_dias": 54,
+        "MAE": 72.4595758377121,
+        "RMSE": 159.453560655152,
+        "WMAPE": 0.0758432126408885,
+        "MASE": 0.7299475280702983,
+        "WQL": null
+      },
+      "atipicos": {
+        "sistema": "metro_l1",
+        "modelo": "ensemble",
+        "estrato": "atipicos",
+        "n_dias": 7,
+        "MAE": 271.9418251035354,
+        "RMSE": 599.7515690902006,
+        "WMAPE": 0.3538979667083801,
+        "MASE": 2.66546404283054,
+        "WQL": null
+      }
+    },
+    "mejor_baseline": {
+      "sistema": "metro_l1",
+      "modelo": "media_4sem",
+      "estrato": "todos",
+      "n_dias": 61,
+      "MAE": 117.26571695039932,
+      "RMSE": 328.6782914779968,
+      "WMAPE": 0.1255614198301315,
+      "MASE": 1.1663583793776968,
+      "WQL": null
+    },
+    "diebold_mariano_vs": [
+      {
+        "sistema": "metro_l1",
+        "ganador": "ensemble",
+        "vs": "naive_7d",
+        "dm_stat": -3.325217632614309,
+        "p_valor": 0.0015108739911079
+      },
+      {
+        "sistema": "metro_l1",
+        "ganador": "ensemble",
+        "vs": "hora_media",
+        "dm_stat": -11.90518006878373,
+        "p_valor": 1.931962314016495e-17
+      },
+      {
+        "sistema": "metro_l1",
+        "ganador": "ensemble",
+        "vs": "media_4sem",
+        "dm_stat": -3.8028029305026703,
+        "p_valor": 0.0003373830375546
+      },
+      {
+        "sistema": "metro_l1",
+        "ganador": "ensemble",
+        "vs": "autoets",
+        "dm_stat": -11.032039913487797,
+        "p_valor": 4.551561843192679e-16
+      },
+      {
+        "sistema": "metro_l1",
+        "ganador": "ensemble",
+        "vs": "mstl",
+        "dm_stat": -5.407764098476717,
+        "p_valor": 1.167169783049538e-06
+      },
+      {
+        "sistema": "metro_l1",
+        "ganador": "ensemble",
+        "vs": "lightgbm",
+        "dm_stat": 0.6839273577332052,
+        "p_valor": 0.4966540808081923
+      },
+      {
+        "sistema": "metro_l1",
+        "ganador": "ensemble",
+        "vs": "chronos_bolt",
+        "dm_stat": -4.299661846782217,
+        "p_valor": 6.385818376528842e-05
+      },
+      {
+        "sistema": "metro_l1",
+        "ganador": "ensemble",
+        "vs": "chronos2",
+        "dm_stat": -1.8403840384410828,
+        "p_valor": 0.0706587608413102
+      }
+    ]
+  },
+  "intervalos_80": [
+    {
+      "sistema": "metro_l1",
+      "modelo": "ensemble",
+      "intervalo": "conformal",
+      "cobertura": 0.7710872915790948,
+      "ancho_rel": 0.2613964327828533
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "ensemble",
+      "intervalo": "proxy_15pct",
+      "cobertura": 0.7960277427490542,
+      "ancho_rel": 0.2996965641837659
+    }
+  ],
+  "aforo_test": [
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_naive_7d",
+      "accuracy": 0.8917612442202606,
+      "balanced_acc": 0.8796185789514416,
+      "f1_weighted": 0.8919863530067448,
+      "f1_macro": 0.871820053708339,
+      "f1_Asientos": 0.9350367294793996,
+      "f1_De_pie": 0.8377195412488226,
+      "f1_Saturado": 0.8427038903967946,
+      "eta_mae_min": 0.1013993975059549,
+      "n": 28548
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_media_4sem",
+      "accuracy": 0.8990472187193499,
+      "balanced_acc": 0.8768617839560783,
+      "f1_weighted": 0.8987671269701644,
+      "f1_macro": 0.8772199132842674,
+      "f1_Asientos": 0.9414814580632924,
+      "f1_De_pie": 0.8481012658227848,
+      "f1_Saturado": 0.8420770159667248,
+      "eta_mae_min": 0.0979578254168418,
+      "n": 28548
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_autoets",
+      "accuracy": 0.8115104385596189,
+      "balanced_acc": 0.789447388788306,
+      "f1_weighted": 0.8117989361814135,
+      "f1_macro": 0.7719110639138975,
+      "f1_Asientos": 0.8915348126452517,
+      "f1_De_pie": 0.716528162511542,
+      "f1_Saturado": 0.7076702165848989,
+      "eta_mae_min": 0.2038584138993975,
+      "n": 28548
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_mstl",
+      "accuracy": 0.8980664144598571,
+      "balanced_acc": 0.8840691244071567,
+      "f1_weighted": 0.8982446890839041,
+      "f1_macro": 0.8783852694891912,
+      "f1_Asientos": 0.9395437868878608,
+      "f1_De_pie": 0.8472460085078173,
+      "f1_Saturado": 0.8483660130718954,
+      "eta_mae_min": 0.0992766568586241,
+      "n": 28548
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_lightgbm",
+      "accuracy": 0.915580776236514,
+      "balanced_acc": 0.8958231721902016,
+      "f1_weighted": 0.915409201322215,
+      "f1_macro": 0.901460054323207,
+      "f1_Asientos": 0.9490228322054266,
+      "f1_De_pie": 0.8693269019951765,
+      "f1_Saturado": 0.8860304287690179,
+      "eta_mae_min": 0.0738720751015833,
+      "n": 28548
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_chronos_bolt",
+      "accuracy": 0.8962799495586381,
+      "balanced_acc": 0.8775725639894857,
+      "f1_weighted": 0.8962489555375255,
+      "f1_macro": 0.8755245564641979,
+      "f1_Asientos": 0.9389077739301712,
+      "f1_De_pie": 0.8440072940266342,
+      "f1_Saturado": 0.8436586014357883,
+      "eta_mae_min": 0.1007408575031526,
+      "n": 28548
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_chronos2",
+      "accuracy": 0.9176824996497128,
+      "balanced_acc": 0.9032025183219272,
+      "f1_weighted": 0.9177532779662078,
+      "f1_macro": 0.902880935832476,
+      "f1_Asientos": 0.9504521716978728,
+      "f1_De_pie": 0.8756158983904522,
+      "f1_Saturado": 0.8825747374091032,
+      "eta_mae_min": 0.0765149922936808,
+      "n": 28548
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_ensemble",
+      "accuracy": 0.919258792209612,
+      "balanced_acc": 0.905162565113746,
+      "f1_weighted": 0.9193120369485898,
+      "f1_macro": 0.9042454696058818,
+      "f1_Asientos": 0.9519019576635366,
+      "f1_De_pie": 0.8778186207274922,
+      "f1_Saturado": 0.8830158304266166,
+      "eta_mae_min": 0.0749281911167157,
+      "n": 28548
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "mayoritaria",
+      "accuracy": 0.5509667927700714,
+      "balanced_acc": 0.3333333333333333,
+      "f1_weighted": 0.3914518455848614,
+      "f1_macro": 0.2368272466517605,
+      "f1_Asientos": 0.7104817399552815,
+      "f1_De_pie": 0.0,
+      "f1_Saturado": 0.0,
+      "eta_mae_min": 0.4208963850357295,
+      "n": 28548
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "moda_historica",
+      "accuracy": 0.8806921675774135,
+      "balanced_acc": 0.8307462721168103,
+      "f1_weighted": 0.878621993976777,
+      "f1_macro": 0.8531484085344821,
+      "f1_Asientos": 0.9321094135041892,
+      "f1_De_pie": 0.8120626457847384,
+      "f1_Saturado": 0.8152731663145185,
+      "eta_mae_min": 0.1032068796413059,
+      "n": 28548
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "histgb_directo",
+      "accuracy": 0.8811825697071599,
+      "balanced_acc": 0.8350068867200816,
+      "f1_weighted": 0.879376945181357,
+      "f1_macro": 0.8564536138527492,
+      "f1_Asientos": 0.9303186403035256,
+      "f1_De_pie": 0.8132222222222222,
+      "f1_Saturado": 0.8258199790324996,
+      "eta_mae_min": 0.1028425809163514,
+      "n": 28548
+    }
+  ],
+  "regla_u_test": [
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_naive_7d",
+      "acuerdo": 0.9595727319931756,
+      "balanced_acc": 0.842393720452145,
+      "f1_macro": 0.8066465605795546,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_media_4sem",
+      "acuerdo": 0.9606483198575774,
+      "balanced_acc": 0.8249474936346068,
+      "f1_macro": 0.8089811597934794,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_autoets",
+      "acuerdo": 0.92452340330836,
+      "balanced_acc": 0.7756855681908034,
+      "f1_macro": 0.696126196924126,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_mstl",
+      "acuerdo": 0.9607224983309844,
+      "balanced_acc": 0.8342812231332556,
+      "f1_macro": 0.8117480559865605,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_lightgbm",
+      "acuerdo": 0.9714041985015948,
+      "balanced_acc": 0.8222782338143059,
+      "f1_macro": 0.8441131185923788,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_chronos_bolt",
+      "acuerdo": 0.9612417476448336,
+      "balanced_acc": 0.8324525470441819,
+      "f1_macro": 0.8094089207107439,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_chronos2",
+      "acuerdo": 0.9689933981158668,
+      "balanced_acc": 0.8384817733925165,
+      "f1_macro": 0.8411233499493002,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "cascada_ensemble",
+      "acuerdo": 0.9692159335360878,
+      "balanced_acc": 0.8462999164784696,
+      "f1_macro": 0.8426091108028237,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "mayoritaria",
+      "acuerdo": 0.9310511089681774,
+      "balanced_acc": 0.3333333333333333,
+      "f1_macro": 0.321431543903454,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "moda_historica",
+      "acuerdo": 0.9584971441287738,
+      "balanced_acc": 0.7134922478975204,
+      "f1_macro": 0.755274559155012,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "histgb_directo",
+      "acuerdo": 0.9615384615384616,
+      "balanced_acc": 0.7297838961785758,
+      "f1_macro": 0.775990906597949,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    },
+    {
+      "sistema": "metro_l1",
+      "modelo": "siempre_abordar",
+      "acuerdo": 0.9310511089681774,
+      "balanced_acc": 0.3333333333333333,
+      "f1_macro": 0.321431543903454,
+      "pct_no_abordar_real": 0.0689488910318225,
+      "n": 26962
+    }
+  ],
+  "eta": {
+    "definicion": "headway(bucket) × factor(clase) con factores 1.0/1.1/1.3",
+    "mae_proxy_min": 0.0749281911167157,
+    "nota": "sin GPS/AVL no hay llegadas reales: el MAE mide el error del ETA inducido por el modelo (clase predicha vs clase observada), no contra llegadas reales"
+  },
+  "criterios_aceptacion": {
+    "RNF-01 (accuracy >= 0.75 y F1-macro >= 0.72)": true,
+    "AC-02 (F1 >= 0.72 en las 3 clases)": true,
+    "AC-03 (recomendación correcta >= 80 %)": true
+  },
+  "limitaciones": [
+    "validaciones = abordajes, no ocupación a bordo; el aforo es un proxy de presión (crowding_index)",
+    "umbrales p60/p90 por franja: 'Saturado' es relativo a la franja (ver aforo_sensibilidad_umbrales.csv)",
+    "un solo año de historia (2025); feriados móviles 2026 tomados del calendario oficial",
+    "paros de transportistas no se anticipan: el detector de anomalías los marca después"
+  ]
+}

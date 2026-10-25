@@ -1,0 +1,52 @@
+{
+  "features": [
+    "serie",
+    "hora",
+    "dow",
+    "fer",
+    "fer_prev",
+    "fer_next",
+    "fer_lag7",
+    "paro_prev",
+    "paro_lag7",
+    "lag24",
+    "lag48",
+    "lag168",
+    "lag336",
+    "m4s",
+    "s4s",
+    "nivel1",
+    "nivel7"
+  ],
+  "series": [
+    "201",
+    "204",
+    "206",
+    "209",
+    "301",
+    "305",
+    "370",
+    "371",
+    "404",
+    "405",
+    "406",
+    "412"
+  ],
+  "n_estimators": 126,
+  "parametros": {
+    "objective": "tweedie",
+    "tweedie_variance_power": 1.2,
+    "learning_rate": 0.05,
+    "num_leaves": 63,
+    "min_child_samples": 40,
+    "subsample": 0.8,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.9,
+    "reg_lambda": 1.0,
+    "random_state": 0,
+    "n_jobs": -1,
+    "verbosity": -1
+  },
+  "entrenado_hasta": "2025-12-31 23:00:00",
+  "filas_entrenamiento": 97056
+}

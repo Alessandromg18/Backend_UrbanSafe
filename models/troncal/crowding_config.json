@@ -1,0 +1,82 @@
+{
+  "sistema": "troncal",
+  "umbrales": {
+    "noche": {
+      "thr_mid": 0.008191056910569105,
+      "thr_hi": 0.11408739837398386
+    },
+    "punta_am": {
+      "thr_mid": 0.20378861788617889,
+      "thr_hi": 0.6784817073170728
+    },
+    "punta_pm": {
+      "thr_mid": 0.26230487804878055,
+      "thr_hi": 0.7343780487804877
+    },
+    "valle": {
+      "thr_mid": 0.1791260162601626,
+      "thr_hi": 0.36341463414634145
+    }
+  },
+  "headway_min": {
+    "LAB": 4.0,
+    "SAB": 5.0,
+    "DOM": 8.0
+  },
+  "cap_vehiculo": 164.0,
+  "orden_upstream": [
+    "Chimpu Ocllo",
+    "Los Incas",
+    "Ramon Castilla",
+    "Bulevar",
+    "Andres Belaunde",
+    "22 De Agosto",
+    "Las Vegas",
+    "Estacion Central",
+    "Naranjal",
+    "Naranjal Alimentador",
+    "Izaguirre",
+    "Pacifico",
+    "Independencia",
+    "Los jazmines",
+    "El Milagro",
+    "Tomas Valle",
+    "Uni",
+    "Honorio Delgado",
+    "Parque del Trabajo",
+    "Caqueta",
+    "Quilca",
+    "Universidad",
+    "Tacna",
+    "Jiron de la Unión",
+    "España",
+    "Estadio Nacional",
+    "México",
+    "Canadá",
+    "Javier Prado",
+    "2 de Mayo",
+    "Canaval y Moreyra",
+    "Aramburu",
+    "Domingo Orué",
+    "Colmena",
+    "Angamos",
+    "Ricardo Palma",
+    "28 de Julio",
+    "Benavides",
+    "Plaza de Flores",
+    "Balta",
+    "Escuela Militar",
+    "Terán",
+    "Rosario de Villa",
+    "Matellini",
+    "Union"
+  ],
+  "alpha_upstream": 0.3,
+  "k_upstream": 2,
+  "clases": [
+    "Asientos",
+    "De_pie",
+    "Saturado"
+  ],
+  "definicion": "crowding = val/Cap_hora + alpha*mean(val k previas)/Cap_hora; Cap_hora = cap_vehiculo*60/headway(bucket); umbrales p60/p90 por franja en train"
+}
