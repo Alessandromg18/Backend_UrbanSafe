@@ -22,7 +22,7 @@ Abre tu terminal en la carpeta del backend y ejecuta los siguientes comandos:
 # Instalar las librerías y dependencias necesarias
 pip install -r requirements.txt
 ```
-### 3.Configurar Variables de Entorno
+### 3. Configurar Variables de Entorno
 Crea un archivo `.env` en la raíz del proyecto (o configúralo en tu entorno local) con la siguiente llave de seguridad para los tokens de acceso.
 
 ```bash
@@ -58,6 +58,6 @@ En el panel de configuración de Render (**Environment**), añade la siguiente v
 JWT_SECRET_KEY=super-secret-key-urban-safe-2026-xyz-987
 ```
 
-### 4.Despliegue Automático
+### 4. Despliegue Automático
 
 Cada vez que realices un `git push` a la rama principal, Render recompilará las dependencias a partir de `requirements.txt` y actualizará el servicio en línea.
