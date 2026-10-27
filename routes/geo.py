@@ -6,6 +6,7 @@ from routes.stations import load_all_stations_into_memory
 import urllib.request
 import urllib.parse
 
+LOCATIONIQ_TOKEN = os.getenv("LOCATIONIQ_TOKEN", "TU_ACCESS_TOKEN_AQUI")
 geo_bp = Blueprint("geo", __name__)
 GEO_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/geo"))
 
@@ -258,16 +259,23 @@ def autocomplete_locations():
         return jsonify([]), 200
 
     try:
-        base_url = "https://nominatim.openstreetmap.org/search"
+        # CAMBIO 1: Nueva URL base de LocationIQ
+        base_url = "https://us1.locationiq.com/v1/search"
+        
         params = {
+            # CAMBIO 2: Agregar tu API Key (lee de variables de entorno de Render)
+            "key": os.getenv("LOCATIONIQ_TOKEN", "TU_TOKEN_AQUI"),
             "q": f"{query}, Lima, Peru",
             "format": "json",
             "limit": 5,
             "countrycodes": "pe",
             "addressdetails": 1
         }
+        
         url = f"{base_url}?{urllib.parse.urlencode(params)}"
-        req = urllib.request.Request(url, headers={'User-Agent': 'UrbanSafe-Backend/1.0'})
+        
+        # Con LocationIQ ya no se requiere el User-Agent de OSM
+        req = urllib.request.Request(url)
         
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
