@@ -1,0 +1,409 @@
+{
+  "sistema": "metro_l1",
+  "version": "2.0.0",
+  "estaciones": [
+    "Villa El Salvador",
+    "Parque Industrial",
+    "Pumacahua",
+    "Villa Maria",
+    "Maria Auxiliadora",
+    "San Juan",
+    "Atocongo",
+    "Jorge Chavez",
+    "Ayacucho",
+    "Cabitos",
+    "Angamos",
+    "San Borja Sur",
+    "La Cultura",
+    "Nicolas Arriola",
+    "Gamarra",
+    "Miguel Grau",
+    "El Ángel",
+    "Presbitero Maestro",
+    "Caja de Agua",
+    "Piramides del Sol",
+    "Los Jardines",
+    "Los Postes",
+    "San Carlos",
+    "San Martin",
+    "Santa Rosa",
+    "Bayóvar"
+  ],
+  "nombres_geojson": [
+    "Villa El Salvador",
+    "Parque Industrial",
+    "Pumacahua",
+    "Villa Maria",
+    "Maria Auxiliadora",
+    "San Juan",
+    "Atocongo",
+    "Jorge Chavez",
+    "Ayacucho",
+    "Cabitos",
+    "Angamos",
+    "San Borja Sur",
+    "La Cultura",
+    "Nicolas Arriola",
+    "Gamarra",
+    "Miguel Grau",
+    "El Angel",
+    "Presbitero Maestro",
+    "Caja De Agua",
+    "Piramides Del Sol",
+    "Los Jardines",
+    "Los Postes",
+    "San Carlos",
+    "San Martin",
+    "Santa Rosa",
+    "Bayovar"
+  ],
+  "km": [
+    0.0,
+    1.521,
+    3.46,
+    5.006,
+    6.177,
+    7.435,
+    9.179,
+    10.838,
+    12.003,
+    12.991,
+    15.014,
+    16.207,
+    17.867,
+    19.524,
+    20.615,
+    21.993,
+    23.025,
+    23.616,
+    25.283,
+    26.79,
+    28.164,
+    29.552,
+    30.951,
+    32.404,
+    33.516,
+    34.709
+  ],
+  "longitud_km": 34.709,
+  "sentidos": {
+    "asc": "hacia Bayóvar",
+    "desc": "hacia Villa El Salvador"
+  },
+  "tiempo_extremo_a_extremo_min": 54.0,
+  "velocidad_comercial_kmh": 38.57,
+  "oferta": {
+    "fuente": "https://larepublica.pe/sociedad/2026/09/04/linea-1-del-metro-de-lima-oficializa-horarios-de-atencion-para-septiembre-de-2026-207920",
+    "nota": "feriados = esquema DOM; hora 22 servida por los últimos trenes en ruta",
+    "horario": {
+      "LAB": [
+        [
+          "05:00",
+          "05:50",
+          10
+        ],
+        [
+          "05:50",
+          "06:18",
+          4
+        ],
+        [
+          "06:18",
+          "09:27",
+          3
+        ],
+        [
+          "09:27",
+          "15:37",
+          5
+        ],
+        [
+          "15:37",
+          "16:33",
+          4
+        ],
+        [
+          "16:33",
+          "20:12",
+          3
+        ],
+        [
+          "20:12",
+          "21:12",
+          4
+        ],
+        [
+          "21:12",
+          "22:00",
+          6
+        ]
+      ],
+      "SAB": [
+        [
+          "05:00",
+          "06:00",
+          10
+        ],
+        [
+          "06:00",
+          "07:05",
+          5
+        ],
+        [
+          "07:05",
+          "08:44",
+          3.7
+        ],
+        [
+          "08:44",
+          "10:04",
+          4
+        ],
+        [
+          "10:04",
+          "11:04",
+          4.3
+        ],
+        [
+          "11:04",
+          "12:03",
+          4.5
+        ],
+        [
+          "12:03",
+          "13:07",
+          4
+        ],
+        [
+          "13:07",
+          "15:02",
+          3.5
+        ],
+        [
+          "15:02",
+          "19:04",
+          3.7
+        ],
+        [
+          "19:04",
+          "20:04",
+          4
+        ],
+        [
+          "20:04",
+          "21:47",
+          4.7
+        ],
+        [
+          "21:47",
+          "22:00",
+          6.3
+        ]
+      ],
+      "DOM": [
+        [
+          "05:30",
+          "06:06",
+          12
+        ],
+        [
+          "06:06",
+          "07:12",
+          11
+        ],
+        [
+          "07:12",
+          "08:08",
+          9.3
+        ],
+        [
+          "08:08",
+          "09:04",
+          8
+        ],
+        [
+          "09:04",
+          "11:04",
+          7.5
+        ],
+        [
+          "11:04",
+          "17:04",
+          6.7
+        ],
+        [
+          "17:04",
+          "18:58",
+          6
+        ],
+        [
+          "18:58",
+          "19:50",
+          6.5
+        ],
+        [
+          "19:50",
+          "21:49",
+          8.5
+        ],
+        [
+          "21:49",
+          "22:00",
+          11
+        ]
+      ]
+    },
+    "trenes_hora": {
+      "LAB": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        7.5,
+        18.5,
+        20.0,
+        20.0,
+        15.6,
+        12.0,
+        12.0,
+        12.0,
+        12.0,
+        12.0,
+        13.15,
+        17.25,
+        20.0,
+        20.0,
+        20.0,
+        16.0,
+        11.0,
+        10.0,
+        0.0
+      ],
+      "SAB": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        6.0,
+        12.0,
+        15.865,
+        15.892,
+        15.0,
+        14.023,
+        13.375,
+        14.917,
+        16.893,
+        17.143,
+        16.247,
+        16.216,
+        16.216,
+        16.216,
+        15.081,
+        12.915,
+        12.063,
+        9.524,
+        0.0
+      ],
+      "DOM": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.5,
+        5.409,
+        6.252,
+        7.36,
+        7.967,
+        8.0,
+        8.892,
+        8.955,
+        8.955,
+        8.955,
+        8.955,
+        8.955,
+        9.93,
+        9.974,
+        8.869,
+        7.059,
+        6.765,
+        5.455,
+        0.0
+      ]
+    }
+  },
+  "vehiculo": {
+    "modelo": "Alstom Metropolis 9000, 6 coches",
+    "capacidad": 1200,
+    "asientos": 187,
+    "asientos_estado": "estimado: 156 sentados por tren de 5 coches (ficha genérica) x 6/5",
+    "area_de_pie_m2": 164.6,
+    "densidad_implicita_capacidad_pax_m2": 6.15,
+    "umbral_saturado_pasajeros": 846,
+    "densidad_saturado_pax_m2": 4.0
+  },
+  "od": {
+    "metodo": "gravedad doblemente acotada (Furness) por hora; bajadas por viaje de retorno",
+    "beta": 0.0,
+    "n": 0.0,
+    "beta_criterio": "ME2 (Ortúzar §12.4.4): sin distribución de longitudes observada, la matriz más probable es la de máxima entropía; además beta = 0 minimiza la asimetría de la matriz diaria (ver od_evaluacion.json)",
+    "bloques": {
+      "am": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "md": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "pm": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "noche": [
+        22,
+        23,
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    "espejo": {
+      "am": "pm",
+      "md": "md",
+      "pm": "am",
+      "noche": "dia"
+    }
+  },
+  "clases": {
+    "Asientos": "carga del tren <= asientos",
+    "De_pie": "asientos < carga <= asientos + 4 pasajeros/m2 de pie",
+    "Saturado": "más de 4 pasajeros/m2 de pie (TCQSM: incomodidad desde 2,86; aplastamiento > 5)"
+  },
+  "fuentes": {
+    "horario_2026": "https://larepublica.pe/sociedad/2026/09/04/linea-1-del-metro-de-lima-oficializa-horarios-de-atencion-para-septiembre-de-2026-207920",
+    "horario_dom_feriados": "https://www.infobae.com/peru/2026/10/18/horarios-del-tren-de-lima-frecuencia-de-paso-en-hora-punta-fines-de-semana-y-claves-para-organizar-el-viaje/",
+    "ositran_2024": "https://www.ositran.gob.pe/anterior/wp-content/uploads/2018/04/id-2024-linea1.pdf",
+    "ositran_2022": "https://www.ositran.gob.pe/anterior/wp-content/uploads/2023/07/id-l1-2022.pdf",
+    "capacidad_1200": "https://gestion.pe/economia/metro-lima-incorpora-primer-tren-6-coches-capacidad-1-200-pasajeros-245920-noticia/",
+    "metropolis_9000": "https://es.wikipedia.org/wiki/Alstom_Metropolis_9000",
+    "linea1_wikipedia": "https://es.wikipedia.org/wiki/L%C3%ADnea_1_del_Metro_de_Lima_y_Callao",
+    "tcqsm_rail": "https://onlinepubs.trb.org/onlinepubs/tcrp/docs/tcrp100/Part5.pdf",
+    "crowding_review": "https://digitalcommons.usf.edu/cgi/viewcontent.cgi?article=1065&context=jpt"
+  }
+}

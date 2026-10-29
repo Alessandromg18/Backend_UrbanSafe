@@ -28,6 +28,7 @@ MODELS_DIR = MODEL_DIR.parent / "models"
 sys.path.insert(0, str(MODEL_DIR))
 
 import model_atu_v2 as V  # noqa: E402
+from ocupacion import LineaOD  # noqa: E402
 
 DIAS_CONTEXTO = 28
 
@@ -86,6 +87,7 @@ class ModeloSistema:
         self.conformal = leer_json(carpeta / "conformal.json")
         self.conformal_ligero = leer_json(carpeta / "conformal_ligero.json")
         self.anomalias = leer_json(carpeta / "anomalias.json")
+        self.linea = LineaOD.cargar(carpeta)
         self._lgb = None
 
     # ── carga ──
@@ -183,23 +185,56 @@ class ModeloSistema:
             conformal = self.conformal if usado == self.principal else {"tipo": "residuo", "por_hora": {}}
         lo, hi = self._banda(pt, Q if usado == self.principal else None, V.escala_local(P, p), conformal)
         dia = P.index[p]
-        crow = V.crowding_dia(self.crowding, P.series, pt, dia)
-        clases = V.clases_desde_crowding(self.crowding, crow)
-        eta = V.eta_minutos(self.crowding, clases[None], [dia])[0]
-        rec = V.recomendaciones(clases[None], eta[None])[0]
-        hw = self.crowding.headway.get(V.bucket_dia(dia), 6.0)
         S = P.S
-        return pd.DataFrame({
+        base = {
             "sistema": self.sistema,
             "unidad": np.repeat(P.series, 24),
             "fecha_hora": np.tile(pd.date_range(dia, periods=24, freq="h"), S),
             "validaciones_pron": pt.ravel(),
             "banda80_lo": lo.ravel(), "banda80_hi": hi.ravel(),
-            "crowding_index": crow.ravel(), "aforo": clases.ravel(),
-            "eta_min": eta.ravel(), "eta2_min": (eta + hw).ravel(),
-            "recomendacion": rec.ravel(), "modelo": usado,
-            "tipo_dia": V.tipo_evento(dia),
+        }
+        operativa = {k: (v.ravel() if isinstance(v, np.ndarray) else v)
+                     for k, v in self.salida_operativa(P.series, pt, dia).items()}
+        return pd.DataFrame({**base, **operativa, "modelo": usado, "tipo_dia": V.tipo_evento(dia)})
+
+    def salida_operativa(self, series: list, Yd: np.ndarray, dia) -> dict:
+        """Aforo, espera y recomendación (arreglos S × 24) a partir de subidas por hora.
+
+        Sirve igual para subidas pronosticadas (app) que observadas (evaluación). Si el sistema
+        tiene ``linea_config.json`` usa la ocupación a bordo estimada con la matriz O-D
+        (``ocupacion.LineaOD``); si no, el índice de presión de abordaje de la v1.
+        """
+        dia = pd.Timestamp(dia)
+        if self.linea is None:
+            crow = V.crowding_dia(self.crowding, list(series), Yd, dia)
+            clases = V.clases_desde_crowding(self.crowding, crow)
+            eta = V.eta_minutos(self.crowding, clases[None], [dia])[0]
+            hw = self.crowding.headway.get(V.bucket_dia(dia), 6.0)
+            return {"crowding_index": crow, "aforo": clases, "eta_min": eta,
+                    "eta2_min": eta + hw,
+                    "recomendacion": V.recomendaciones(clases[None], eta[None])[0],
+                    "metodo_aforo": "presion_abordaje_v1"}
+
+        r = self.linea.aplicar(Yd, list(series), V.bucket_dia(dia))
+        S = len(series)
+        hw = np.broadcast_to(r.intervalo_min[None, :], (S, 24))
+        out = {"bajadas_est": r.bajadas, "intervalo_min": hw}
+        for s in ("asc", "desc"):
+            clase = r.clase[s]
+            rec = V.recomendaciones(clase[None], np.nan_to_num(r.espera_min[s], nan=99.0)[None])[0]
+            rec = np.where(clase == "Sin_servicio", "sin_servicio", rec)
+            out.update({f"carga_{s}": r.carga_tren[s], f"ocupacion_{s}": r.ocupacion[s],
+                        f"aforo_{s}": clase, f"eta_{s}": r.espera_min[s], f"recomendacion_{s}": rec})
+        # Sin sentido conocido se informa el sentido más cargado (criterio conservador)
+        critico_asc = np.nan_to_num(r.ocupacion["asc"], nan=-1) >= np.nan_to_num(r.ocupacion["desc"], nan=-1)
+        elegir = lambda k: np.where(critico_asc, out[f"{k}_asc"], out[f"{k}_desc"])  # noqa: E731
+        out.update({
+            "sentido_critico": np.where(critico_asc, self.linea.sentidos["asc"], self.linea.sentidos["desc"]),
+            "crowding_index": elegir("ocupacion"), "aforo": elegir("aforo"),
+            "eta_min": elegir("eta"), "eta2_min": elegir("eta") + hw,
+            "recomendacion": elegir("recomendacion"), "metodo_aforo": "ocupacion_od_v2",
         })
+        return out
 
     # ── anomalías (residuo diario vs media de 4 semanas, z robusto) ──
     def anomalia_dia(self, contexto: pd.DataFrame, dia, reales: pd.DataFrame) -> dict:

@@ -1,0 +1,201 @@
+{
+  "sistema": "metro_l1",
+  "metodo": "gravedad doblemente acotada (Furness) por hora; bajadas por viaje de retorno",
+  "beta": 0.0,
+  "sintetico": {
+    "n_sim": 40,
+    "sigma_ruido_atraccion": 0.35,
+    "beta_verdadero": "U(0, 0.06) por min",
+    "estimador_beta": 0.0,
+    "resultados": {
+      "od_retorno": {
+        "wape_carga": {
+          "media": 0.2368,
+          "p10": 0.1,
+          "p90": 0.3884
+        },
+        "wape_bajadas": {
+          "media": 0.2606,
+          "p10": 0.2254,
+          "p90": 0.3024
+        },
+        "acc": {
+          "media": 0.8707,
+          "p10": 0.8151,
+          "p90": 0.9283
+        },
+        "f1_macro": {
+          "media": 0.7149,
+          "p10": 0.6021,
+          "p90": 0.8686
+        },
+        "err_rel_pico": {
+          "media": 0.1554,
+          "p10": 0.0554,
+          "p90": 0.2682
+        }
+      },
+      "bajadas_uniformes": {
+        "wape_carga": {
+          "media": 0.3266,
+          "p10": 0.2302,
+          "p90": 0.45
+        },
+        "wape_bajadas": {
+          "media": 0.6315,
+          "p10": 0.5848,
+          "p90": 0.6789
+        },
+        "acc": {
+          "media": 0.8115,
+          "p10": 0.7701,
+          "p90": 0.856
+        },
+        "f1_macro": {
+          "media": 0.5524,
+          "p10": 0.5021,
+          "p90": 0.6013
+        },
+        "err_rel_pico": {
+          "media": 0.0982,
+          "p10": 0.0442,
+          "p90": 0.1566
+        }
+      }
+    }
+  },
+  "sensibilidad_beta": [
+    {
+      "beta_por_min": 0.0,
+      "viaje_medio_min": 20.2,
+      "viaje_medio_km": 13.0,
+      "asimetria_diaria": 0.0649,
+      "pico_am_por_tren": 904,
+      "pico_pm_por_tren": 1007
+    },
+    {
+      "beta_por_min": 0.01,
+      "viaje_medio_min": 19.2,
+      "viaje_medio_km": 12.4,
+      "asimetria_diaria": 0.0652,
+      "pico_am_por_tren": 872,
+      "pico_pm_por_tren": 971
+    },
+    {
+      "beta_por_min": 0.02,
+      "viaje_medio_min": 18.2,
+      "viaje_medio_km": 11.7,
+      "asimetria_diaria": 0.0656,
+      "pico_am_por_tren": 839,
+      "pico_pm_por_tren": 936
+    },
+    {
+      "beta_por_min": 0.03,
+      "viaje_medio_min": 17.2,
+      "viaje_medio_km": 11.1,
+      "asimetria_diaria": 0.0661,
+      "pico_am_por_tren": 809,
+      "pico_pm_por_tren": 902
+    },
+    {
+      "beta_por_min": 0.05,
+      "viaje_medio_min": 15.4,
+      "viaje_medio_km": 9.9,
+      "asimetria_diaria": 0.0673,
+      "pico_am_por_tren": 759,
+      "pico_pm_por_tren": 842
+    },
+    {
+      "beta_por_min": 0.08,
+      "viaje_medio_min": 13.3,
+      "viaje_medio_km": 8.5,
+      "asimetria_diaria": 0.0695,
+      "pico_am_por_tren": 707,
+      "pico_pm_por_tren": 779
+    }
+  ],
+  "contraste_real": {
+    "subidas_dia_laborable": 599834,
+    "subidas_2025_total": 201512887,
+    "referencia_ositran": "191,1 millones de pasajeros en 2024 (Informe de Desempeño 2024)",
+    "longitud_km": 34.709,
+    "referencia_longitud": "34 km (Ositrán), 34,6 km (Wikipedia); Grau en km 22,1 (Ositrán: tramo 1)",
+    "km_miguel_grau": 21.993,
+    "tramos_criticos": {
+      "07:00 hacia Bayóvar": {
+        "tramo": "Ayacucho -> Cabitos",
+        "pasajeros_por_tren": 904,
+        "ocupacion": 0.753,
+        "clase": "Saturado",
+        "trenes_hora": 20.0
+      },
+      "07:00 hacia Villa El Salvador": {
+        "tramo": "El Ángel -> Miguel Grau",
+        "pasajeros_por_tren": 887,
+        "ocupacion": 0.739,
+        "clase": "Saturado",
+        "trenes_hora": 20.0
+      },
+      "08:00 hacia Bayóvar": {
+        "tramo": "Ayacucho -> Cabitos",
+        "pasajeros_por_tren": 807,
+        "ocupacion": 0.673,
+        "clase": "De_pie",
+        "trenes_hora": 20.0
+      },
+      "08:00 hacia Villa El Salvador": {
+        "tramo": "El Ángel -> Miguel Grau",
+        "pasajeros_por_tren": 835,
+        "ocupacion": 0.696,
+        "clase": "De_pie",
+        "trenes_hora": 20.0
+      },
+      "18:00 hacia Bayóvar": {
+        "tramo": "Miguel Grau -> El Ángel",
+        "pasajeros_por_tren": 1007,
+        "ocupacion": 0.839,
+        "clase": "Saturado",
+        "trenes_hora": 20.0
+      },
+      "18:00 hacia Villa El Salvador": {
+        "tramo": "Ayacucho -> Jorge Chavez",
+        "pasajeros_por_tren": 927,
+        "ocupacion": 0.773,
+        "clase": "Saturado",
+        "trenes_hora": 20.0
+      }
+    }
+  },
+  "pronostico_test": {
+    "dias_test": "2025-11-01 a 2025-12-31 (61 días)",
+    "verdad": "ocupación calculada con las subidas observadas por la misma cadena O-D",
+    "lightgbm": {
+      "MAE_pasajeros_tren": 22.3,
+      "WMAPE": 0.0488,
+      "accuracy": 0.9602,
+      "f1_macro": 0.9219,
+      "f1_weighted": 0.9596,
+      "balanced_accuracy": 0.9081
+    },
+    "media_4sem": {
+      "MAE_pasajeros_tren": 58.2,
+      "WMAPE": 0.127,
+      "accuracy": 0.9183,
+      "f1_macro": 0.8299,
+      "f1_weighted": 0.9166,
+      "balanced_accuracy": 0.8213
+    },
+    "distribucion_clases_observadas": {
+      "De_pie": 0.7491,
+      "Asientos": 0.1719,
+      "Saturado": 0.079
+    },
+    "recomendacion_acuerdo": 0.9771,
+    "recomendacion_siempre_abordar": 0.9674,
+    "segundos_por_dia_pronostico_mas_od": 0.022,
+    "RNF_01": {
+      "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
+      "cumple": true
+    }
+  }
+}

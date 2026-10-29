@@ -1,12 +1,30 @@
 # UrbanSafe Backend API
 
-API REST y motor de inferencia analítica desarrollado para **UrbanSafe**, responsable de gestionar la autenticación de usuarios (JWT), procesar el proxy geoespacial de OpenStreetMap y ejecutar los modelos predictivos de Machine Learning (LightGBM/XGBoost) para la afluencia en el transporte público de Lima Metropolitana.
+API REST y motor de inferencia analítica desarrollado para **UrbanSafe**, responsable de gestionar la autenticación de usuarios (JWT), procesar el proxy geoespacial de OpenStreetMap y ejecutar los modelos predictivos de Machine Learning (LightGBM) para la afluencia en el transporte público de Lima Metropolitana.
+
+## Modelo de predicción (v2)
+
+- **Demanda:** LightGBM por sistema, pronóstico horario de subidas (validaciones ATU). Es el modelo de producción: en el test retenido iguala o supera al ensemble con Chronos y corre en milisegundos.
+- **Ocupación a bordo (Metro L1):** matriz origen-destino estimada solo con subidas (gravedad doblemente acotada / Furness, bajadas por viaje de retorno), carga por tramo y sentido, y pasajeros por tren según el horario oficial. Clases por densidad de pie: Asientos, De pie, Saturado. Detalle, evaluación y fuentes en [docs/MODELO_OCUPACION.md](docs/MODELO_OCUPACION.md).
+- **Fechas:** hora de Lima. Para fechas posteriores a 2025 se usa el día homólogo de 2025 con datos ATU (mismo día de la semana y tipo de día), declarado en `referencia`.
+- **Endpoints:**
+
+| Endpoint | Uso |
+|---|---|
+| `GET /api/predictions/estacion/<station_id>?dia&hour&hacia_id` | Estado actual + 24 h de un paradero en una sola llamada (recomendado) |
+| `GET /api/predictions/<sistema>/<serie>?dia&hour&sentido\|hacia` | Una hora |
+| `GET /api/predictions/<sistema>/<serie>/forecast?dia&hours&desde_hora&sentido\|hacia` | Horas del día |
+| `GET /api/stations` | Cada estación trae `model_system` y `model_series` (`null` = sin datos ATU, no se inventa la predicción) |
+
+- **Cambios pendientes en el frontend:** [docs/INTEGRACION_FRONTEND.md](docs/INTEGRACION_FRONTEND.md).
+- **Tests:** `pip install pytest && python -m pytest tests` (algoritmo de Furness contra la Tabla 5.7 de Ortúzar y Willumsen, calendario, API y latencia P95).
+- **Regenerar o evaluar:** `python scripts/construir_linea_metro_l1.py` y `python scripts/evaluar_od_metro_l1.py`.
 
 
 ## Stack Tecnológico
 * **Lenguaje:** Python 3.10+
-* **Framework Web:** Flask / FastAPI
-* **Machine Learning:** LightGBM, XGBoost, Scikit-Learn
+* **Framework Web:** Flask
+* **Machine Learning:** LightGBM, Scikit-Learn, NumPy (matriz O-D)
 * **Control de Tráfico / Geo:** Requests, OpenStreetMap Nominatim API Integration
 
 
