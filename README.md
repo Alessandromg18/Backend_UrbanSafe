@@ -5,7 +5,7 @@ API REST y motor de inferencia analítica desarrollado para **UrbanSafe**, respo
 ## Modelo de predicción (v2)
 
 - **Demanda:** LightGBM por sistema, pronóstico horario de subidas (validaciones ATU). Es el modelo de producción: en el test retenido iguala o supera al ensemble con Chronos y corre en milisegundos.
-- **Ocupación a bordo (Metro L1):** matriz origen-destino estimada solo con subidas (gravedad doblemente acotada / Furness, bajadas por viaje de retorno), carga por tramo y sentido, y pasajeros por tren según el horario oficial. Clases por densidad de pie: Asientos, De pie, Saturado. Detalle, evaluación y fuentes en [docs/MODELO_OCUPACION.md](docs/MODELO_OCUPACION.md).
+- **Ocupación a bordo (los 4 sistemas):** matriz origen-destino estimada solo con subidas, con bajadas por viaje de retorno. Metro L1 y troncal: línea doblemente acotada (Furness). Corredores: por ruta y sentido a nivel de paradero (acotada a orígenes). Alimentadores: carga crítica junto a la estación de integración. Los pasajeros por vehículo salen del horario oficial (Metro) o de la flota publicada (buses). Clases por densidad de pie: Asientos, De pie, Saturado. Detalle, evaluación en test y fuentes en [docs/MODELO_OCUPACION.md](docs/MODELO_OCUPACION.md).
 - **Fechas:** hora de Lima. Para fechas posteriores a 2025 se usa el día homólogo de 2025 con datos ATU (mismo día de la semana y tipo de día), declarado en `referencia`.
 - **Endpoints:**
 
@@ -18,7 +18,7 @@ API REST y motor de inferencia analítica desarrollado para **UrbanSafe**, respo
 
 - **Cambios pendientes en el frontend:** [docs/INTEGRACION_FRONTEND.md](docs/INTEGRACION_FRONTEND.md).
 - **Tests:** `pip install pytest && python -m pytest tests` (algoritmo de Furness contra la Tabla 5.7 de Ortúzar y Willumsen, calendario, API y latencia P95).
-- **Regenerar o evaluar:** `python scripts/construir_linea_metro_l1.py` y `python scripts/evaluar_od_metro_l1.py`.
+- **Regenerar o evaluar:** `python scripts/construir_linea_metro_l1.py`, `python scripts/construir_linea_troncal.py`, `python scripts/construir_rutas_bus.py --datos <DPD_project>/deliveries/week10/data_processed/clean`, `python scripts/evaluar_od_metro_l1.py` y `python scripts/evaluar_ocupacion.py`.
 
 
 ## Stack Tecnológico

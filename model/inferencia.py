@@ -28,7 +28,7 @@ MODELS_DIR = MODEL_DIR.parent / "models"
 sys.path.insert(0, str(MODEL_DIR))
 
 import model_atu_v2 as V  # noqa: E402
-from ocupacion import LineaOD  # noqa: E402
+from ocupacion import cargar_capa  # noqa: E402
 
 DIAS_CONTEXTO = 28
 
@@ -52,6 +52,12 @@ def _pipeline(tipo: str, repo: str, revision: str):
         return Chronos2Pipeline.from_pretrained(repo, revision=revision, device_map="cpu")
     from chronos import ChronosBoltPipeline
     return ChronosBoltPipeline.from_pretrained(repo, revision=revision, device_map="cpu")
+
+
+def recomendar(clase: np.ndarray, espera: np.ndarray) -> np.ndarray:
+    """Regla U (week08) con la clase de la hora siguiente; "sin_servicio" fuera de horario."""
+    rec = V.recomendaciones(np.asarray(clase)[None], np.nan_to_num(espera, nan=99.0)[None])[0]
+    return np.where(np.asarray(clase) == "Sin_servicio", "sin_servicio", rec)
 
 
 def panel_desde_contexto(sistema: str, contexto: pd.DataFrame, dia) -> tuple[V.Panel, int]:
@@ -87,7 +93,7 @@ class ModeloSistema:
         self.conformal = leer_json(carpeta / "conformal.json")
         self.conformal_ligero = leer_json(carpeta / "conformal_ligero.json")
         self.anomalias = leer_json(carpeta / "anomalias.json")
-        self.linea = LineaOD.cargar(carpeta)
+        self.linea = cargar_capa(carpeta)   # capa de ocupación (None = índice v1)
         self._lgb = None
 
     # ── carga ──
@@ -171,7 +177,7 @@ class ModeloSistema:
                 hi[:, h] = pt[:, h] + c.get("q_hi", 0.0) * escala[:, h]
         return np.clip(lo, 0, None), np.clip(hi, 0, None)
 
-    def pronosticar(self, contexto: pd.DataFrame, dia, modo: str = "principal") -> pd.DataFrame:
+    def pronosticar(self, contexto: pd.DataFrame, dia, modo: str = "principal", con_paradas: bool = False):
         """``modo="ligero"`` usa solo LightGBM: sin torch ni Chronos, milisegundos por sistema y
         precisión estadísticamente equivalente al principal en la evaluación (ver model_card)."""
         faltan = [s for s in self.series if s not in contexto.columns]
@@ -193,17 +199,23 @@ class ModeloSistema:
             "validaciones_pron": pt.ravel(),
             "banda80_lo": lo.ravel(), "banda80_hi": hi.ravel(),
         }
-        operativa = {k: (v.ravel() if isinstance(v, np.ndarray) else v)
-                     for k, v in self.salida_operativa(P.series, pt, dia).items()}
-        return pd.DataFrame({**base, **operativa, "modelo": usado, "tipo_dia": V.tipo_evento(dia)})
+        operativa, r = self._operativa(P.series, pt, dia)
+        operativa = {k: (v.ravel() if isinstance(v, np.ndarray) else v) for k, v in operativa.items()}
+        df = pd.DataFrame({**base, **operativa, "modelo": usado, "tipo_dia": V.tipo_evento(dia)})
+        if not con_paradas:
+            return df
+        return df, self._tabla_paradas(r, dia)
 
     def salida_operativa(self, series: list, Yd: np.ndarray, dia) -> dict:
         """Aforo, espera y recomendación (arreglos S × 24) a partir de subidas por hora.
 
         Sirve igual para subidas pronosticadas (app) que observadas (evaluación). Si el sistema
-        tiene ``linea_config.json`` usa la ocupación a bordo estimada con la matriz O-D
-        (``ocupacion.LineaOD``); si no, el índice de presión de abordaje de la v1.
+        tiene capa de ocupación (``linea_config.json`` o ``rutas_config.json``) usa la ocupación
+        a bordo estimada con la matriz O-D; si no, el índice de presión de abordaje de la v1.
         """
+        return self._operativa(series, Yd, dia)[0]
+
+    def _operativa(self, series: list, Yd: np.ndarray, dia):
         dia = pd.Timestamp(dia)
         if self.linea is None:
             crow = V.crowding_dia(self.crowding, list(series), Yd, dia)
@@ -213,28 +225,46 @@ class ModeloSistema:
             return {"crowding_index": crow, "aforo": clases, "eta_min": eta,
                     "eta2_min": eta + hw,
                     "recomendacion": V.recomendaciones(clases[None], eta[None])[0],
-                    "metodo_aforo": "presion_abordaje_v1"}
+                    "metodo_aforo": "presion_abordaje_v1"}, None
 
         r = self.linea.aplicar(Yd, list(series), V.bucket_dia(dia))
         S = len(series)
-        hw = np.broadcast_to(r.intervalo_min[None, :], (S, 24))
-        out = {"bajadas_est": r.bajadas, "intervalo_min": hw}
+        hw = r.intervalo_min
+        out = {"intervalo_min": hw}
+        if r.bajadas is not None:
+            out["bajadas_est"] = r.bajadas
         for s in ("asc", "desc"):
             clase = r.clase[s]
-            rec = V.recomendaciones(clase[None], np.nan_to_num(r.espera_min[s], nan=99.0)[None])[0]
-            rec = np.where(clase == "Sin_servicio", "sin_servicio", rec)
             out.update({f"carga_{s}": r.carga_tren[s], f"ocupacion_{s}": r.ocupacion[s],
-                        f"aforo_{s}": clase, f"eta_{s}": r.espera_min[s], f"recomendacion_{s}": rec})
+                        f"aforo_{s}": clase, f"eta_{s}": r.espera_min[s],
+                        f"recomendacion_{s}": recomendar(clase, r.espera_min[s])})
         # Sin sentido conocido se informa el sentido más cargado (criterio conservador)
         critico_asc = np.nan_to_num(r.ocupacion["asc"], nan=-1) >= np.nan_to_num(r.ocupacion["desc"], nan=-1)
         elegir = lambda k: np.where(critico_asc, out[f"{k}_asc"], out[f"{k}_desc"])  # noqa: E731
+        desc = np.array([[self.linea.sentidos_de(s)["asc"], self.linea.sentidos_de(s)["desc"]] for s in series])
         out.update({
-            "sentido_critico": np.where(critico_asc, self.linea.sentidos["asc"], self.linea.sentidos["desc"]),
+            "sentido_critico": np.where(critico_asc, desc[:, :1], desc[:, 1:]),
             "crowding_index": elegir("ocupacion"), "aforo": elegir("aforo"),
             "eta_min": elegir("eta"), "eta2_min": elegir("eta") + hw,
             "recomendacion": elegir("recomendacion"), "metodo_aforo": "ocupacion_od_v2",
         })
-        return out
+        assert all(v.shape == (S, 24) for v in out.values() if isinstance(v, np.ndarray))
+        return out, r
+
+    @staticmethod
+    def _tabla_paradas(r, dia) -> pd.DataFrame | None:
+        """Detalle por paradero (corredores): una fila por (serie, paradero, hora)."""
+        if r is None or not r.paradas:
+            return None
+        horas = pd.date_range(pd.Timestamp(dia), periods=24, freq="h")
+        filas = []
+        for (serie, cod), d in r.paradas.items():
+            filas.append(pd.DataFrame({
+                "unidad": serie, "paradero": cod, "nombre": d["nombre"], "sentido": d["sentido"],
+                "fecha_hora": horas, "subidas_est": d["subidas"], "bajadas_est": d["bajadas"],
+                "carga": d["carga_tren"], "ocupacion": d["ocupacion"], "aforo": d["clase"],
+                "eta": d["espera_min"], "recomendacion": recomendar(d["clase"][None], d["espera_min"][None])[0]}))
+        return pd.concat(filas, ignore_index=True)
 
     # ── anomalías (residuo diario vs media de 4 semanas, z robusto) ──
     def anomalia_dia(self, contexto: pd.DataFrame, dia, reales: pd.DataFrame) -> dict:

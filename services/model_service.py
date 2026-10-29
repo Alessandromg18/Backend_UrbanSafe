@@ -45,9 +45,10 @@ def contexto(sistema: str) -> pd.DataFrame:
     return pd.read_parquet(DATA_DIR / f"{sistema}_2025.parquet")
 
 
-@lru_cache(maxsize=512)
-def _pronostico_referencia(sistema: str, fecha_ref: str) -> pd.DataFrame:
-    return modelo(sistema).pronosticar(contexto(sistema), fecha_ref, modo=MODO_PRODUCCION)
+@lru_cache(maxsize=256)
+def _pronostico_referencia(sistema: str, fecha_ref: str) -> tuple[pd.DataFrame, pd.DataFrame | None]:
+    """(pronóstico por serie, detalle por paradero o None) del día de referencia."""
+    return modelo(sistema).pronosticar(contexto(sistema), fecha_ref, modo=MODO_PRODUCCION, con_paradas=True)
 
 
 def validar_sistema(sistema: str) -> str:
@@ -75,19 +76,28 @@ def parsear_dia(dia: str | None) -> dt.date:
         raise PrediccionError(f"Fecha inválida '{dia}': use YYYY-MM-DD") from exc
 
 
-def pronostico_dia(sistema: str, fecha: dt.date) -> tuple[pd.DataFrame, calendario.Referencia]:
-    """Pronóstico de las 24 h de ``fecha`` (todas las series) con la fecha objetivo real."""
+def pronostico_dia(sistema: str, fecha: dt.date, paradas: bool = False):
+    """Pronóstico de las 24 h de ``fecha`` (todas las series) con la fecha objetivo real.
+
+    Devuelve (df, referencia) o, con ``paradas=True``, (df, referencia, detalle_por_paradero).
+    """
     ref = calendario.dia_referencia(fecha)
-    df = _pronostico_referencia(sistema, ref.referencia.isoformat()).copy()
+    df, par = _pronostico_referencia(sistema, ref.referencia.isoformat())
     desfase = pd.Timestamp(fecha) - pd.Timestamp(ref.referencia)
+    df = df.copy()
     df["fecha_hora"] = pd.to_datetime(df["fecha_hora"]) + desfase
-    return df, ref
+    if not paradas:
+        return df, ref
+    if par is not None:
+        par = par.copy()
+        par["fecha_hora"] = pd.to_datetime(par["fecha_hora"]) + desfase
+    return df, ref, par
 
 
 def sentido_hacia(sistema: str, origen: str, destino: str | None) -> str | None:
     """'asc' | 'desc' según la posición del destino en la línea (None si no aplica)."""
     linea = modelo(sistema).linea
-    if linea is None or not destino:
+    if linea is None or not destino or not hasattr(linea, "estaciones"):
         return None
     dest = resolver_serie(sistema, destino)
     if dest is None or dest not in linea.estaciones:
@@ -97,9 +107,22 @@ def sentido_hacia(sistema: str, origen: str, destino: str | None) -> str | None:
     return "asc" if linea.estaciones.index(dest) > linea.estaciones.index(origen) else "desc"
 
 
+def _filas_paradero(par: pd.DataFrame, serie: str, paradero: str, filas_serie: pd.DataFrame) -> list[dict]:
+    """Filas por hora de un paradero con el mismo esquema que las de la serie."""
+    x = par[(par["unidad"] == serie) & (par["paradero"] == paradero)].sort_values("fecha_hora")
+    hw = filas_serie.set_index("fecha_hora")["intervalo_min"].reindex(x["fecha_hora"]).to_numpy()
+    return [{"fecha_hora": f.fecha_hora, "validaciones_pron": f.subidas_est, "banda80_lo": None,
+             "banda80_hi": None, "crowding_index": f.ocupacion, "aforo": f.aforo, "eta_min": f.eta,
+             "eta2_min": f.eta + h, "recomendacion": f.recomendacion, "intervalo_min": h,
+             "metodo_aforo": "ocupacion_od_v2_paradero", "sentido_critico": f.sentido,
+             "carga": f.carga, "bajadas_est": f.bajadas_est, "paradero": f.paradero, "nombre": f.nombre}
+            for f, h in zip(x.itertuples(), hw)]
+
+
 def prediccion_serie(sistema: str, serie: str, dia: str | None = None,
-                     sentido: str | None = None, hacia: str | None = None) -> dict:
-    """Pronóstico de un día para una serie, listo para la API."""
+                     sentido: str | None = None, hacia: str | None = None,
+                     paradero: str | None = None) -> dict:
+    """Pronóstico de un día para una serie (o un paradero de la serie), listo para la API."""
     sistema = validar_sistema(sistema)
     serie = validar_serie(sistema, serie)
     fecha = parsear_dia(dia)
@@ -107,14 +130,17 @@ def prediccion_serie(sistema: str, serie: str, dia: str | None = None,
         sentido = sentido_hacia(sistema, serie, hacia)
     if sentido not in (None, "asc", "desc"):
         raise PrediccionError("sentido debe ser 'asc' o 'desc'")
-    df, ref = pronostico_dia(sistema, fecha)
+    df, ref, par = pronostico_dia(sistema, fecha, paradas=True)
     filas = df[df["unidad"] == serie].sort_values("fecha_hora")
     linea = modelo(sistema).linea
+    registros = filas.to_dict(orient="records")
+    nivel = "serie"
+    if paradero and par is not None and ((par["unidad"] == serie) & (par["paradero"] == paradero)).any():
+        registros, nivel, sentido = _filas_paradero(par, serie, paradero, filas), "paradero", None
     return {
-        "sistema": sistema, "serie": serie, "sentido": sentido,
-        "sentidos": linea.sentidos if linea is not None else None,
-        "referencia": ref.to_dict(), "modelo": MODO_PRODUCCION,
-        "filas": filas.to_dict(orient="records"),
+        "sistema": sistema, "serie": serie, "sentido": sentido, "nivel": nivel, "paradero": paradero,
+        "sentidos": linea.sentidos_de(serie) if linea is not None else None,
+        "referencia": ref.to_dict(), "modelo": MODO_PRODUCCION, "filas": registros,
     }
 
 

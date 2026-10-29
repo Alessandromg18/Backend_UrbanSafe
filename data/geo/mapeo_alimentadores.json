@@ -23,10 +23,13 @@
     "Norte/SantoDomingo": null,
     "Norte/Tahuantinsuyo": "Tahuantinsuyo",
     "Norte/Tungasuca": null,
-    "Sur/America": null,
+    "Sur/America": "Las Américas",
     "Sur/CedrosDeVilla": "Cedros de Villa",
     "Sur/LosProceres": "Los Próceres",
     "Sur/VillaElSalvador": "Villa El Salvador",
     "Universidad/Trapiche": "Trapiche"
+  },
+  "notas": {
+    "Sur/America": "asignado a la serie \"Las Américas\": Infobae (2023) lista \"América\" entre los alimentadores del sur (Matellini) y su patrón de demanda coincide con las demás rutas del sur"
   }
 }

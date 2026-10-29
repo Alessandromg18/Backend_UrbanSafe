@@ -58,4 +58,17 @@ Si no se pasa destino, el backend informa el **sentido más cargado** (criterio 
 | `class` = `Sin_servicio`, `recommendation` = `sin_servicio` | Horas sin trenes (p. ej. 23:00–04:59): mostrar "Fuera de horario" |
 | `eta_min` | Espera esperada en el andén (intervalo/2 con el horario oficial), no la llegada de un tren rastreado |
 | `referencia.fecha_referencia_datos` | Día de 2025 con datos ATU usado como base; conviene mostrarlo en letra pequeña |
-| `metodo_aforo` | `ocupacion_od_v2` (Metro L1) o `presion_abordaje_v1` (otros sistemas, aún no es ocupación real) |
+| `metodo_aforo` | `ocupacion_od_v2` en los cuatro sistemas (ocupación real estimada) |
+| `nivel` | `paradero` en corredores (ocupación del bus al salir de ese paradero, en su sentido) o `serie` |
+
+## Por sistema
+
+| Sistema | Sentido | Qué muestra `current` |
+|---|---|---|
+| Metro L1 / Metropolitano | Con `hacia_id` (destino); si no, el sentido más cargado | Ocupación al salir de la estación hacia el destino |
+| Corredores | **Automático:** el código del paradero ATU ya trae el sentido | Ocupación del bus al salir de ese paradero (`current.paradero`, `current.sentido` = "hacia …") |
+| Alimentadores | Sin destino: el sentido más cargado; `por_sentido` trae "saliendo de / hacia la estación de integración" | Ocupación en el tramo más cargado de la ruta (junto al terminal) |
+
+El marcador de la estación **Bulevar** del Metropolitano en `puntos_troncal.geojson` está en la
+ampliación norte, pero la estación real queda en Barranco (entre Estadio Unión y Balta). Hay que
+corregir esa coordenada para el mapa.

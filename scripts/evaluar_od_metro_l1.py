@@ -30,12 +30,12 @@ sys.path[:0] = [str(RAIZ), str(RAIZ / "model")]
 import model_atu_v2 as V  # noqa: E402
 import od_matrix as OD  # noqa: E402
 from inferencia import ModeloSistema, panel_desde_contexto  # noqa: E402
-from ocupacion import LineaOD  # noqa: E402
+from ocupacion import cargar_capa  # noqa: E402
 
 SIS = "metro_l1"
 CARPETA = RAIZ / "models" / SIS
 CTX = pd.read_parquet(RAIZ / "data" / "context" / f"{SIS}_2025.parquet")
-LINEA = LineaOD.cargar(CARPETA)
+LINEA = cargar_capa(CARPETA)
 EST = LINEA.estaciones
 CLASES = ["Asientos", "De_pie", "Saturado"]
 rng = np.random.default_rng(2025)

@@ -1,7 +1,15 @@
 # Modelo de aforo v2: ocupación a bordo estimada con matriz O-D
 
-**Estado:** piloto en producción para **Metro de Lima Línea 1**. Troncal, corredores y alimentadores
-siguen con el índice v1 (presión de abordaje); la API lo indica en `metodo_aforo`.
+**Estado:** en producción para los **cuatro sistemas**: Metro L1, Metropolitano (troncal),
+corredores complementarios y alimentadores. Las secciones 2 a 6 detallan el piloto de Metro L1 y la
+sección 8 describe la extensión al resto. Todas las respuestas traen `metodo_aforo = ocupacion_od_v2`.
+
+| Sistema | Capa | Nivel que ve el usuario | RNF-01 en test |
+|---|---|---|---|
+| Metro L1 | Línea O-D doblemente acotada | Estación y sentido | Cumple (F1-macro 0,92) |
+| Troncal | Línea O-D doblemente acotada | Estación y sentido | Cumple (F1-macro 0,94) |
+| Corredores | O-D por ruta y sentido, acotada a orígenes | **Paradero** (el código ATU ya trae el sentido) | Cumple (F1-macro 0,82) |
+| Alimentadores | Carga crítica junto a la estación de integración | Ruta y sentido | **No cumple** (F1-macro 0,60; accuracy 0,85) |
 
 ## 1. Problema
 
@@ -155,9 +163,111 @@ cuánto del error de ocupación aporta el pronóstico.
 - **Asientos supuestos:** el número de asientos por tren de Lima es una estimación.
 - **β sin calibrar:** no hay una distribución de longitudes de viaje observada; con una encuesta
   O-D o con datos de tarjeta con destino, se calibraría con Hyman (`od_matrix.calibrar_hyman`).
-- **Solo Metro L1:** el Metropolitano tiene servicios expresos y un ramal en el centro (no es una
-  línea simple), y corredores y alimentadores necesitan pronóstico por paradero. Quedan como
-  siguiente paso.
+- **Otros sistemas:** las limitaciones propias del troncal, los corredores y los alimentadores están
+  en la sección 8.5.
+
+## 8. Extensión a troncal, corredores y alimentadores
+
+### 8.1 Método por sistema
+
+| Sistema | Datos ATU | Método | Archivos |
+|---|---|---|---|
+| **Troncal** | Subidas por estación y hora, sin sentido | Igual que Metro L1: línea de 45 estaciones y 33,6 km, O-D doblemente acotada y bajadas por viaje de retorno | `models/troncal/linea_config.json` (`scripts/construir_linea_troncal.py`) |
+| **Corredores** | Subidas por paradero × ruta × sentido × hora (el código ATU termina en NS/SN/EO/OE) | El pronóstico por ruta se reparte a paraderos con las participaciones de ene–oct 2025. Por ruta y sentido, la O-D es **acotada a orígenes** (Ortúzar ec. 5.16): `T_ij = O_i W_j / Σ_{k>i} W_k`, con atracciones `W_j` por viaje de retorno medidas en el paradero opuesto más cercano | `models/corredor/rutas_config.json` + `rutas_participaciones.npz` (`scripts/construir_rutas_bus.py`) |
+| **Alimentadores** | Subidas por ruta × sentido × hora | En el norte, entre el 74 % y el 98 % de las subidas de salida ocurren en la estación de integración, así que el bus lleva a todo el sentido en el tramo junto al terminal. Carga crítica = subidas del sentido / buses por hora (cota superior si hay viajes locales) | `models/alimentador/rutas_config.json` |
+
+**Orden de paraderos (corredores):** se parte de la secuencia principal del catálogo ATU (`n_paradero`),
+se insertan las paradas agregadas después con inserción más barata, se mejora con 2-opt y se orienta
+con el sufijo del código. Contra los largos publicados: 404 da 25,9/23,0 km (Wikipedia: 24,1/23,8);
+405 da 23,2/22,1 (21,2/21,8); 201 da 27,4 km de media (31,4).
+
+**Topología del troncal:** eje sur proyectado sobre la relación OSM "Regular C"; el ramal del centro
+(Colmena–Jr. de la Unión–Tacna–Ramón Castilla) y el eje España–Quilca–2 de Mayo se modelan como un
+solo corredor entre Estación Central y Caquetá; luego el eje norte hasta Chimpu Ocllo. Dos ubicaciones
+corregidas:
+- **Andrés Reyes** no está en el GeoJSON; se ubica a una cuadra de Canaval y Moreyra.
+- **Bulevar** está en Barranco, entre Estadio Unión y Balta. El GeoJSON la ubica por error en la
+  ampliación norte: **hay que corregir ese punto en el mapa de la app**.
+
+### 8.2 Vehículos
+
+| Sistema | Capacidad | Asientos | Saturado (> 4 de pie/m²) | Fuente |
+|---|---:|---:|---:|---|
+| Troncal (articulado 18,5 m) | 164 | 47 | 123 | ATU (2024); la densidad implícita a capacidad es 6,12 de pie/m² |
+| Corredores (12 m) | 80 | 36 | 65 | Modasa Titán Urbano: 80 pasajeros (ficha GNV) y 36 asientos (ficha 2025) |
+| Alimentadores norte (8,5 m) | 40 | 18* | 33 | Infobae (2023); *asientos supuestos (45 %) |
+| Alimentadores sur (12 m) | 80 | 36 | 65 | Infobae (2023): bus amarillo en las rutas del sur |
+
+En buses, el umbral de saturación es `asientos + 4 · (capacidad − asientos) / 6`, el mismo criterio de
+densidad que en Metro L1 y en el troncal (capacidad nominal ≈ 6 de pie/m²).
+
+### 8.3 Oferta (buses por hora)
+
+No hay intervalos oficiales por ruta y hora. Los que se publican son insuficientes para la demanda
+medida: la 201 figura con 5–7 min, pero en punta sube unas 6000 personas por hora y el operador declaró
+"unidades cada 2 minutos en hora punta". Por eso la oferta se deriva de lo que sí se publica:
+
+- **Troncal:** 117 buses/h en hora punta y 25,5 km/h (Protransporte, vía BRTData; dato de 2013).
+  La espera usa el intervalo de **un servicio**: punta 3, valle 6 y extremos 10 min (Infobae,
+  oct. 2026).
+- **Corredores y alimentadores:** la flota en servicio de cada corredor se reparte con el **método
+  del punto de carga máxima** (Ceder): `f_r = L_max,r / k`, con `Σ f_r · T_ciclo,r = flota`.
+  - `L_max,r` es la carga en el punto crítico en la hora punta de un día laborable medio.
+  - `T_ciclo = 2 · largo / velocidad × 1,10`.
+  - Flotas: **Rojo 225** buses operando (El Comercio); **Azul 120** (157 × 225/294, Wikipedia);
+    **Morado 152** programados (ATU, 2024); **alimentadores 171** (223 del plan MTC × 225/294).
+- **Perfil del día:** valle = 0,5 y extremos = 0,3 de la frecuencia de punta (patrón publicado del
+  Metropolitano); sábado 0,8 y domingo 0,65 (intervalos publicados de la 201, 204 y 301).
+
+| Ruta | Intervalo en punta | Carga máxima en punta | Largo |
+|---|---:|---:|---:|
+| 201 | 1,4 min | 2378 pas/h | 27,4 km |
+| 204 | 3,0 | 1114 | 35,6 |
+| 301 | 1,5 | 1038 | 15,9 |
+| 404 | 1,9 | 1136 | 24,4 |
+| 412 | 2,1 | 1022 | 16,8 |
+| Alimentadores | 2,5 (Villa El Salvador) a 20 min | — | trazados ATU/OSRM |
+
+El intervalo de la 201 (1,4 min) concuerda con lo declarado por el operador (unos 2 min en punta).
+La carga de diseño resultante por bus en punta es 56 en el Rojo, 26 en el Azul y 36 en el Morado.
+
+**Espera:** `t = (h² + σ²) / 2h` (ec. 10.19) con coeficiente de variación del intervalo de 0 en el
+Metro, 0,3 en el troncal (carril segregado) y 0,5 en buses en tráfico mixto (supuestos).
+
+### 8.4 Evaluación en test (2025-11-01 a 2025-12-31)
+
+Reproducible con `python scripts/evaluar_ocupacion.py`; los resultados quedan en
+`models/evaluacion_ocupacion.json`. La "verdad" es la cadena aplicada a las subidas **observadas**:
+por estación en Metro y troncal, por **paradero** en corredores y por sentido en alimentadores. El
+error incluye el pronóstico de demanda y el reparto a paraderos.
+
+| Sistema (nivel) | Modelo | Accuracy | F1-macro | WMAPE de la carga | MAE (pas./vehículo) |
+|---|---|---:|---:|---:|---:|
+| Metro L1 (estación × sentido) | **LightGBM** | **0,960** | **0,922** | **0,049** | 22,3 |
+| | media_4sem | 0,918 | 0,830 | 0,127 | 58,2 |
+| Troncal (estación × sentido) | **LightGBM** | **0,946** | **0,943** | **0,074** | 5,1 |
+| | media_4sem | 0,908 | 0,899 | 0,184 | 12,7 |
+| Corredores (paradero × sentido) | **LightGBM** | **0,936** | **0,818** | **0,180** | 3,6 |
+| | media_4sem | 0,904 | 0,728 | 0,258 | 5,1 |
+| Alimentadores (ruta × sentido) | **LightGBM** | **0,853** | 0,605 | 0,525 | 5,7 |
+| | media_4sem | 0,808 | 0,531 | 0,671 | 7,3 |
+
+**Alimentadores no cumple RNF-01** (F1-macro 0,60 < 0,72). Con la demanda real, el reparto por
+sentido solo da F1-macro 0,81, así que el error viene del **pronóstico de demanda** de esas rutas
+(WMAPE 0,40 desde la v1: series pequeñas y ruidosas). Mejorarlo exige reentrenar ese modelo.
+
+### 8.5 Limitaciones adicionales
+
+- **Oferta derivada:** las flotas son públicas pero no siempre recientes (Azul en Wikipedia, troncal
+  de 2013). La ocupación escala con 1/frecuencia: si la flota real es 20 % menor, la ocupación es
+  25 % mayor.
+- **Troncal:** se agregan servicios regulares y expresos, y se usa la frecuencia del eje central
+  en toda la línea (en la ampliación norte pasan menos buses).
+- **Alimentadores:** la carga crítica es una cota superior cuando hay viajes locales (rutas del
+  sur y algunas del norte con poca concentración en el terminal). No hay detalle por paradero: los
+  nombres de paradero de los datos no coinciden con los del GeoJSON.
+- **Corredores:** entre el 2 % y el 4 % de la demanda de las rutas 204, 404 y 406 está en paraderos
+  sin coordenadas y no entra en el perfil de carga.
 
 ## 7. Fuentes
 
@@ -171,3 +281,15 @@ cuánto del error de ocupación aporta el pronóstico.
 - Línea 1 (longitud, tiempo de extremo a extremo): <https://es.wikipedia.org/wiki/L%C3%ADnea_1_del_Metro_de_Lima_y_Callao>
 - TCQSM 2.ª ed., Parte 5 (densidades de pie): <https://onlinepubs.trb.org/onlinepubs/tcrp/docs/tcrp100/Part5.pdf>
 - Li, Z. y Hensher, D. (2013). Crowding in Public Transport: A Review of Objective and Subjective Measures: <https://digitalcommons.usf.edu/cgi/viewcontent.cgi?article=1065&context=jpt>
+- Ceder, A. (2016). *Public Transit Planning and Operation* (2.ª ed.). CRC Press: método del punto de carga máxima.
+- ATU, bus troncal de 164 pasajeros (47 sentados): <https://www.gob.pe/institucion/atu/noticias/895166-atu-nuevo-bus-articulado-del-metropolitano-podra-transportar-a-164-pasajeros>
+- BRTData, Lima (117 buses/h en punta, 25,5 km/h): <https://brtdata.org/location/latin_america/peru/lima/?lang=es>
+- Horarios y frecuencias del Metropolitano (oct. 2026): <https://www.infobae.com/peru/2026/10/17/horarios-del-metropolitano-apertura-de-estaciones-y-salidas-de-buses-en-lima/>
+- Estación Andrés Reyes: <https://gestion.pe/peru/metropolitano-nueva-estacion-andres-reyes-san-isidro-estaria-lista-ano-273267-noticia/>
+- Corredor Rojo, rutas y frecuencias (oct. 2026): <https://www.infobae.com/peru/2026/10/16/corredor-rojo-rutas-201-204-206-y-209-paraderos-y-mapa-completo/>
+- Corredor Rojo, flota en operación y "cada 2 minutos en punta": <https://elcomercio.pe/lima/transporte/los-duenos-de-la-javier-prado-que-haran-la-atu-y-el-corredor-rojo-ante-caos-por-minivanes-informales-taxis-colectivos-notepases-papeletas-atu-sat-transporte-informal-mtc-carreteras-calles-avenidas-autos-noticia/>
+- Flotas de los corredores complementarios: <https://en.wikipedia.org/wiki/Complementary_corridors>; Corredor Morado (152 buses): <https://andina.pe/agencia/noticia-corredor-morado-dejo-operar-y-7-empresas-cubriran-su-ruta-cuales-son-976570.aspx>
+- Servicio 201 (31,4 km): <https://es.wikipedia.org/wiki/Servicio_201_(Corredor_Rojo)>; Servicio 404: <https://es.wikipedia.org/wiki/Servicio_404_(Corredor_Morado)>
+- Modasa Titán Urbano 12 m: <https://transportepesadognv.calidda.com.pe/wp-content/uploads/2025/06/ft_modasa_titan_12m.pdf>, <http://www.busesycamiones.pe/carrocerias/596-carroceria-modasa-titan-urbano-gnv>
+- Alimentadores del Metropolitano (tipos de bus y rutas): <https://www.infobae.com/peru/2023/03/14/alimentadores-del-metropolitano-diferencias-entre-los-buses-y-cuales-son-las-rutas/>
+- Nueva flota del Metropolitano (plan MTC: 300 troncales y 223 alimentadores): <https://elcomercio.pe/lima/transporte/nueva-flota-de-buses-del-metropolitano-cuantos-seran-que-tendran-y-cuando-llegaran-atu-transporte-noticia/>

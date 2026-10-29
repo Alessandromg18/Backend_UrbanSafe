@@ -65,6 +65,38 @@ def test_paraderos_sin_datos_devuelven_null():
     assert corredor_sin_modelo and all(e["model_series"] is None for e in corredor_sin_modelo)
 
 
+def test_troncal_sentido_por_destino(client):
+    d = client.get("/api/predictions/troncal/Naranjal?dia=2026-10-29&hour=7&hacia=Estacion%20Central").get_json()
+    assert d["sentido"] == "desc" and d["metodo_aforo"] == "ocupacion_od_v2"
+    assert d["crowding"]["class"] in ("Asientos", "De_pie", "Saturado")
+    assert d["eta"]["next"] < 5          # intervalo de servicio en punta (2-4 min)
+
+
+def test_corredor_paradero_con_sentido_propio(client):
+    est = client.get("/api/stations?system=corredores").get_json()
+    p = next(e for e in est if e["model_series"] == "201" and e["raw_properties"]["cod_paradero"] == "2AVIACEO")
+    d = client.get(f"/api/predictions/estacion/{p['id']}?dia=2026-10-29&hour=7").get_json()
+    assert d["nivel"] == "paradero"
+    assert d["current"]["sentido"].startswith("hacia ")
+    assert d["current"]["pasajeros_por_tren"] is not None and len(d["forecast"]) == 24
+
+
+def test_alimentador_ocupacion_por_sentido(client):
+    d = client.get("/api/predictions/alimentador/Naranjal?dia=2026-10-29&hour=7").get_json()
+    assert d["metodo_aforo"] == "ocupacion_od_v2"
+    assert set(d["detalle"]["por_sentido"]) == {"asc", "desc"}
+    assert "estación de integración" in d["detalle"]["sentido"]
+
+
+def test_todos_los_paraderos_con_datos_tienen_serie():
+    from routes.stations import load_all_stations_into_memory
+    est = load_all_stations_into_memory()
+    sin_serie = [e["name"] for e in est if e["system"] in ("metro_l1", "metropolitano") and not e["model_series"]]
+    assert sin_serie == ["Las Vegas"]       # estación de la ampliación norte sin validaciones ATU en 2025
+    ali = [e for e in est if e["system"] == "alimentadores" and e["raw_properties"]["servicio"] == "Sur/America"]
+    assert ali and all(e["model_series"] == "Las Américas" for e in ali)
+
+
 def test_latencia_p95_en_caliente(client):
     client.get("/api/predictions/metro_l1/Gamarra/forecast?dia=2026-10-29")   # calienta caché
     t = []

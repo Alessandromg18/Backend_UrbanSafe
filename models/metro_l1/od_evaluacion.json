@@ -192,7 +192,7 @@
     },
     "recomendacion_acuerdo": 0.9771,
     "recomendacion_siempre_abordar": 0.9674,
-    "segundos_por_dia_pronostico_mas_od": 0.022,
+    "segundos_por_dia_pronostico_mas_od": 0.025,
     "RNF_01": {
       "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
       "cumple": true

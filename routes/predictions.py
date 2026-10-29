@@ -47,7 +47,12 @@ def _item(fila: dict, sentido: str | None, sentidos: dict | None) -> dict:
         "eta2_min": _num(eta2, 1),
         "recommendation": rec,
     }
-    if fila.get("metodo_aforo") == "ocupacion_od_v2":
+    if fila.get("metodo_aforo") == "ocupacion_od_v2_paradero":
+        out.update({"sentido": fila.get("sentido_critico"), "paradero": fila.get("nombre"),
+                    "pasajeros_por_tren": _num(fila.get("carga"), 0),
+                    "bajadas_estimadas": _num(fila.get("bajadas_est"), 1),
+                    "intervalo_min": _num(hw, 1)})
+    elif fila.get("metodo_aforo") == "ocupacion_od_v2":
         out.update({
             "sentido": (sentidos or {}).get(sentido) if sfx else fila.get("sentido_critico"),
             "pasajeros_por_tren": _num(fila.get(f"carga{sfx}") if sfx else None, 0),
@@ -82,6 +87,7 @@ def _meta(res: dict) -> dict:
     m = MS.modelo(res["sistema"])
     return {
         "system": res["sistema"], "series": res["serie"], "model": "lightgbm",
+        "nivel": res.get("nivel", "serie"),
         "metodo_aforo": "ocupacion_od_v2" if m.linea is not None else "presion_abordaje_v1",
         "unidades": {
             "value": "subidas (validaciones) por hora en la estación",
@@ -127,7 +133,9 @@ def get_station_prediction(station_id):
         if request.args.get("hacia_id"):
             dest = _buscar_estacion(request.args["hacia_id"])
             hacia = serie_de_estacion(dest)[1] if dest else None
-        res = MS.prediccion_serie(sistema, serie, request.args.get("dia"), hacia=hacia)
+        # Corredores: el código del paradero ya fija ruta y sentido -> detalle del paradero
+        paradero = (est.get("raw_properties") or {}).get("cod_paradero") if sistema == "corredor" else None
+        res = MS.prediccion_serie(sistema, serie, request.args.get("dia"), hacia=hacia, paradero=paradero)
         hora = _hora_param()
         items = [_item(f, res["sentido"], res["sentidos"]) for f in res["filas"]]
         actual = next(i for i, f in zip(items, res["filas"]) if pd.Timestamp(f["fecha_hora"]).hour == hora)
