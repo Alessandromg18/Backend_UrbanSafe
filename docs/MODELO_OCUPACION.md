@@ -8,8 +8,10 @@ sección 8 describe la extensión al resto. Todas las respuestas traen `metodo_a
 |---|---|---|---|
 | Metro L1 | Línea O-D doblemente acotada | Estación y sentido | Cumple (F1-macro 0,92) |
 | Troncal | Línea O-D doblemente acotada | Estación y sentido | Cumple (F1-macro 0,94) |
-| Corredores | O-D por ruta y sentido, acotada a orígenes | **Paradero** (el código ATU ya trae el sentido) | Cumple (F1-macro 0,82) |
-| Alimentadores | Carga crítica junto a la estación de integración | Ruta y sentido | **No cumple** (F1-macro 0,60; accuracy 0,85) |
+| Corredores | O-D por ruta y sentido, acotada a orígenes | **Paradero** (el código ATU ya trae el sentido) | Accuracy 0,93 cumple; **F1-macro 0,67 no** |
+| Alimentadores | Carga crítica junto a la estación de integración | Ruta y sentido | Accuracy 0,86 cumple; **F1-macro 0,52 no** |
+
+**Versión serializada: 1.1.0** (`models/manifest.json`, sección 8.6).
 
 ## 1. Problema
 
@@ -164,7 +166,7 @@ cuánto del error de ocupación aporta el pronóstico.
 - **β sin calibrar:** no hay una distribución de longitudes de viaje observada; con una encuesta
   O-D o con datos de tarjeta con destino, se calibraría con Hyman (`od_matrix.calibrar_hyman`).
 - **Otros sistemas:** las limitaciones propias del troncal, los corredores y los alimentadores están
-  en la sección 8.5.
+  en la sección 8.7.
 
 ## 8. Extensión a troncal, corredores y alimentadores
 
@@ -207,29 +209,35 @@ No hay intervalos oficiales por ruta y hora. Los que se publican son insuficient
 medida: la 201 figura con 5–7 min, pero en punta sube unas 6000 personas por hora y el operador declaró
 "unidades cada 2 minutos en hora punta". Por eso la oferta se deriva de lo que sí se publica:
 
-- **Troncal:** 117 buses/h en hora punta y 25,5 km/h (Protransporte, vía BRTData; dato de 2013).
-  La espera usa el intervalo de **un servicio**: punta 3, valle 6 y extremos 10 min (Infobae,
-  oct. 2026).
-- **Corredores y alimentadores:** la flota en servicio de cada corredor se reparte con el **método
-  del punto de carga máxima** (Ceder): `f_r = L_max,r / k`, con `Σ f_r · T_ciclo,r = flota`.
-  - `L_max,r` es la carga en el punto crítico en la hora punta de un día laborable medio.
-  - `T_ciclo = 2 · largo / velocidad × 1,10`.
-  - Flotas: **Rojo 225** buses operando (El Comercio); **Azul 120** (157 × 225/294, Wikipedia);
+- **Troncal:** 117 buses/h en hora punta y 25,5 km/h (Protransporte, vía BRTData; dato de 2013),
+  con perfil del día según los intervalos publicados (Infobae, oct. 2026). La espera usa el
+  intervalo de **un servicio**: punta 3, valle 6 y extremos 10 min.
+- **Corredores y alimentadores: método del punto de carga máxima** (Ceder), aplicado hora por hora
+  y por tipo de día con la demanda media de ese día (feb–oct 2025):
+  - **Punta** (6–8 h y 17–19 h): `f_r = L_max,r / k`, con `k` tal que `Σ f_r · T_ciclo,r = flota`
+    del corredor; `T_ciclo = 2 · largo / velocidad × 1,10`.
+  - **Fuera de punta:** carga de diseño = asientos (el operador programa para que se viaje
+    sentado), sin superar la frecuencia de punta y con al menos 3 buses/h.
+  - **Servicio:** de 05:00 a 22:59.
+  - **Flotas:** **Rojo 225** buses operando (El Comercio); **Azul 120** (157 × 225/294, Wikipedia);
     **Morado 152** programados (ATU, 2024); **alimentadores 171** (223 del plan MTC × 225/294).
-- **Perfil del día:** valle = 0,5 y extremos = 0,3 de la frecuencia de punta (patrón publicado del
-  Metropolitano); sábado 0,8 y domingo 0,65 (intervalos publicados de la 201, 204 y 301).
 
-| Ruta | Intervalo en punta | Carga máxima en punta | Largo |
-|---|---:|---:|---:|
-| 201 | 1,4 min | 2378 pas/h | 27,4 km |
-| 204 | 3,0 | 1114 | 35,6 |
-| 301 | 1,5 | 1038 | 15,9 |
-| 404 | 1,9 | 1136 | 24,4 |
-| 412 | 2,1 | 1022 | 16,8 |
-| Alimentadores | 2,5 (Villa El Salvador) a 20 min | — | trazados ATU/OSRM |
+| Ruta | Intervalo en punta | Intervalo 12:00 (laborable) | Carga máxima en punta | Largo |
+|---|---:|---:|---:|---:|
+| 201 | 1,4 min | 2,1 min | 2378 pas/h | 27,4 km |
+| 204 | 3,0 | 4,5 | 1114 | 35,6 |
+| 301 | 1,5 | 4,0 | 1038 | 15,9 |
+| 404 | 1,9 | 6,5 | 1136 | 24,4 |
+| 412 | 2,1 | 6,5 | 1022 | 16,8 |
+| Alimentadores | 2,5 (Villa El Salvador) a 20 | 8 a 20 | — | trazados ATU/OSRM |
 
-El intervalo de la 201 (1,4 min) concuerda con lo declarado por el operador (unos 2 min en punta).
-La carga de diseño resultante por bus en punta es 56 en el Rojo, 26 en el Azul y 36 en el Morado.
+El intervalo de punta de la 201 (1,4 min) concuerda con lo declarado por el operador (unos 2 min).
+La carga de diseño por bus en punta es 56 en el Rojo, 26 en el Azul y 36 en el Morado.
+
+Una primera versión usaba un perfil fijo (valle = 50 % de la punta). Con él, los corredores salían
+**más saturados al mediodía que en punta** (5,6 % frente a 0,4 % de horas en "Saturado"), algo
+incoherente, y se descartó. Con el método por hora, la saturación queda en la punta (8,6 % frente
+a 0,2 % en valle).
 
 **Espera:** `t = (h² + σ²) / 2h` (ec. 10.19) con coeficiente de variación del intervalo de 0 en el
 Metro, 0,3 en el troncal (carril segregado) y 0,5 en buses en tráfico mixto (supuestos).
@@ -241,22 +249,61 @@ Reproducible con `python scripts/evaluar_ocupacion.py`; los resultados quedan en
 por estación en Metro y troncal, por **paradero** en corredores y por sentido en alimentadores. El
 error incluye el pronóstico de demanda y el reparto a paraderos.
 
-| Sistema (nivel) | Modelo | Accuracy | F1-macro | WMAPE de la carga | MAE (pas./vehículo) |
-|---|---|---:|---:|---:|---:|
-| Metro L1 (estación × sentido) | **LightGBM** | **0,960** | **0,922** | **0,049** | 22,3 |
-| | media_4sem | 0,918 | 0,830 | 0,127 | 58,2 |
-| Troncal (estación × sentido) | **LightGBM** | **0,946** | **0,943** | **0,074** | 5,1 |
-| | media_4sem | 0,908 | 0,899 | 0,184 | 12,7 |
-| Corredores (paradero × sentido) | **LightGBM** | **0,936** | **0,818** | **0,180** | 3,6 |
-| | media_4sem | 0,904 | 0,728 | 0,258 | 5,1 |
-| Alimentadores (ruta × sentido) | **LightGBM** | **0,853** | 0,605 | 0,525 | 5,7 |
-| | media_4sem | 0,808 | 0,531 | 0,671 | 7,3 |
+| Sistema (nivel) | Modelo | Accuracy | F1-macro | F1-weighted | WMAPE de la carga | MAE (pas./vehículo) |
+|---|---|---:|---:|---:|---:|---:|
+| Metro L1 (estación × sentido) | **LightGBM** | **0,960** | **0,922** | **0,960** | **0,049** | 22,3 |
+| | media_4sem | 0,918 | 0,830 | 0,917 | 0,127 | 58,2 |
+| Troncal (estación × sentido) | **LightGBM** | **0,946** | **0,943** | **0,946** | **0,074** | 5,1 |
+| | media_4sem | 0,908 | 0,899 | 0,908 | 0,184 | 12,7 |
+| Corredores (paradero × sentido) | **LightGBM** | **0,926** | **0,670** | **0,924** | **0,183** | 3,6 |
+| | media_4sem | 0,891 | 0,555 | 0,897 | 0,298 | 5,9 |
+| Alimentadores (ruta × sentido) | **LightGBM** | **0,861** | **0,523** | **0,852** | **0,500** | 5,1 |
+| | media_4sem | 0,821 | 0,467 | 0,821 | 0,643 | 6,5 |
 
-**Alimentadores no cumple RNF-01** (F1-macro 0,60 < 0,72). Con la demanda real, el reparto por
-sentido solo da F1-macro 0,81, así que el error viene del **pronóstico de demanda** de esas rutas
-(WMAPE 0,40 desde la v1: series pequeñas y ruidosas). Mejorarlo exige reentrenar ese modelo.
+- **LightGBM supera al baseline en los cuatro sistemas.**
+- **RNF-01** (accuracy ≥ 0,75 y F1-macro ≥ 0,72):
+  - Metro L1 y troncal: cumplen.
+  - Corredores y alimentadores: cumplen la accuracy pero no el F1-macro. El F1-macro promedia las
+    tres clases por igual, y "Saturado" es rara en buses: 1,5 % de las horas en corredores y 2,7 % en
+    alimentadores, así que unos pocos errores en esa clase lo bajan mucho.
+- **Alimentadores:** con la demanda real, el reparto por sentido da F1-macro 0,81. El error viene
+  del **pronóstico de demanda** de esas rutas (WMAPE 0,40 desde la v1); mejorarlo exige reentrenar
+  ese modelo.
 
-### 8.5 Limitaciones adicionales
+### 8.5 Comparación con el proxy v1 (subidas observadas, test)
+
+| Sistema | Acuerdo de clase v1–v2 | "Saturado" en punta (7, 8, 18, 19 h): v1 → v2 | "Saturado" en valle (11–14 h): v1 → v2 |
+|---|---:|---:|---:|
+| Metro L1 | 34 % | 14 % → **23 %** | 18 % → **4 %** |
+| Troncal | 36 % | 12 % → **35 %** | 13 % → **18 %** |
+| Corredores | 56 % | 11 % → **9 %** | 10 % → **0,2 %** |
+| Alimentadores | 68 % | 6 % → **12 %** | 7 % → **1 %** |
+
+El v1 marcaba "Saturado" por percentiles **dentro de cada franja**, así que el valle salía tan
+"saturado" como la punta (en Metro, incluso más). La v2 mide pasajeros por vehículo contra su
+capacidad, así que la saturación se concentra en la punta y en los tramos que llegan al centro. Las
+clases cambian en la mayoría de las horas: el acuerdo es de 34 % a 68 %.
+
+### 8.6 Serialización v1.1.0
+
+`python scripts/serializar_v1_1_0.py`:
+
+- Sube a **1.1.0** la versión de las capas y de los `model_card.json`. Cada card trae la sección
+  `aforo_v2` con método, archivos, métricas de test y comparación con v1.
+- Genera las salidas de referencia del 2025-12-15 (`referencia_v1_1_0.csv`, y el detalle por
+  paradero en corredores).
+- Escribe `models/manifest.json` con sha256 y tamaño de 44 artefactos y de los 5 archivos de
+  datos de entrada.
+
+La API carga los modelos con `verificar_hash=True`: si un artefacto cambió, no arranca.
+`tests/test_serializacion.py` verifica los hashes y que la recarga reproduce exactamente las salidas
+de referencia en los cuatro sistemas.
+
+**Bug de nombres corregido:** `orden_upstream` del índice v1 (`crowding_config.json`) no coincidía
+con las series en 4 estaciones de Metro L1 (tildes y mayúsculas) ni en 2 del troncal. Ahora usa los
+nombres exactos. Solo afecta a la ruta de respaldo v1, que ya no se usa en ningún sistema.
+
+### 8.7 Limitaciones adicionales
 
 - **Oferta derivada:** las flotas son públicas pero no siempre recientes (Azul en Wikipedia, troncal
   de 2013). La ocupación escala con 1/frecuencia: si la flota real es 20 % menor, la ocupación es
@@ -269,7 +316,7 @@ sentido solo da F1-macro 0,81, así que el error viene del **pronóstico de dema
 - **Corredores:** entre el 2 % y el 4 % de la demanda de las rutas 204, 404 y 406 está en paraderos
   sin coordenadas y no entra en el perfil de carga.
 
-## 7. Fuentes
+## 9. Fuentes
 
 - Ortúzar, J. de D. y Willumsen, L. G. (2008). *Modelos de Transporte*. PUbliCan, Universidad de Cantabria.
 - Ositrán, Informe de Desempeño 2024, Línea 1: <https://www.ositran.gob.pe/anterior/wp-content/uploads/2018/04/id-2024-linea1.pdf>

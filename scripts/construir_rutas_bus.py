@@ -61,11 +61,12 @@ FLOTAS = {
 }
 VELOCIDAD_KMH = {"corredor": 26.0, "alimentador": 20.0}   # 201: 31,4 km en ~72 min; alimentador: supuesto
 FACTOR_CICLO = 1.10                                      # +10 % de regulación en terminales (supuesto)
-# Perfil horario de frecuencias relativo a la punta (Metropolitano, Infobae oct. 2026: punta 2-4
-# min, valle 5-7, primera y última hora 8-12 -> 1 : 0,5 : 0,3) y por tipo de día (intervalos
-# publicados de la 201, 204 y 301: sábado ~0,8 y domingo ~0,65 de la frecuencia laborable)
-RATIO_HORA = {h: 1.0 for h in (6, 7, 8, 17, 18, 19)} | {h: 0.5 for h in (*range(9, 17), 20, 21)} | {5: 0.3, 22: 0.3}
-RATIO_DIA = {"LAB": 1.0, "SAB": 0.8, "DOM": 0.65}
+# Fuera de la hora punta se programa con carga de diseño = asientos (Ceder: d0 de valle = plazas
+# sentadas), sin superar la frecuencia de punta ni bajar de 3 buses/h (intervalo máximo 20 min).
+# Servicio de 05:00 a 22:59 (corredores y alimentadores operan ~05:00-23:00).
+HORAS_PUNTA = (6, 7, 8, 17, 18, 19)
+HORAS_SERVICIO = range(5, 23)
+F_MIN, F_MAX = 3.0, 60.0
 
 ALIMENTADORES_SUR = {"Cedros de Villa", "Villa El Salvador", "Las Américas", "Los Próceres"}
 
@@ -84,17 +85,17 @@ VEH_ALIM_NORTE = vehiculo(40, 18, "Bus naranja 8,5 m: 40 pasajeros (Infobae 2023
 VEH_ALIM_SUR = vehiculo(80, 36, "Bus amarillo 12 m: 80 pasajeros (Infobae 2023, ruta sur); asientos como el 12 m")
 
 
-def perfil(f_punta: float) -> dict:
-    return {b: [round(f_punta * RATIO_DIA[b] * RATIO_HORA.get(h, 0.0), 3) for h in range(24)]
-            for b in BUCKETS}
-
-
-def dia_laborable_medio(sistema: str, series: list) -> np.ndarray:
-    """Subidas medias (R, 24) de un día laborable normal (feb-oct 2025)."""
+def dia_medio(sistema: str, series: list, bucket: str) -> np.ndarray:
+    """Subidas medias (R, 24) de un día normal del tipo ``bucket`` (feb-oct 2025)."""
     ctx = pd.read_parquet(RAIZ / "data" / "context" / f"{sistema}_2025.parquet")
     dias = [d for d in pd.date_range("2025-02-03", FIN_TRAIN, freq="D")
-            if d.weekday() < 5 and calendario.tipo_dia(d.date())[0] == "normal"]
+            if bucket_de(d) == bucket and calendario.tipo_dia(d.date())[0] in ("normal", "feriado")
+            and not (bucket != "DOM" and calendario.tipo_dia(d.date())[0] == "feriado")]
     return np.mean([ctx.loc[d:d + pd.Timedelta(hours=23), series].to_numpy(float).T for d in dias], axis=0)
+
+
+def bucket_de(d: pd.Timestamp) -> str:
+    return bucket(d)
 
 
 def asignar_oferta(sistema: str, cfg: dict, npz: dict, largo_km: dict, grupo_de, frac_modelada: dict) -> list:
@@ -105,35 +106,50 @@ def asignar_oferta(sistema: str, cfg: dict, npz: dict, largo_km: dict, grupo_de,
         r["buses_hora"] = {b: [1.0] * 24 for b in BUCKETS}     # 1 vehículo/h -> carga = pasajeros/h
     capa = (RutasParaderoOD if cfg["tipo"] == "rutas_paradero" else RutasCargaCritica)(cfg, npz)
     series = list(cfg["rutas"])
-    res = capa.aplicar(dia_laborable_medio(sistema, series), series, "LAB")
-    L = np.maximum(res.carga_tren["asc"], res.carga_tren["desc"]).astype(float)   # (R, 24) pax/h
+    L = {}
+    for b in BUCKETS:   # (R, 24) pasajeros/h en el punto de máxima carga (1 vehículo/h)
+        res = capa.aplicar(dia_medio(sistema, series, b), series, b)
+        L[b] = np.maximum(res.carga_tren["asc"], res.carga_tren["desc"]).astype(float)
     grupos: dict[str, list[int]] = {}
     for i, s in enumerate(series):
         grupos.setdefault(grupo_de(s), []).append(i)
     resumen = []
     for g, idx in grupos.items():
         flota, fuente = FLOTAS[sistema][g]
-        h_punta = int(np.argmax(L[idx].sum(0)))
-        lmax = L[idx, h_punta]
+        h_punta = int(np.argmax(L["LAB"][idx].sum(0)))
+        lmax = L["LAB"][idx, h_punta]
         ciclo_h = np.array([2 * largo_km[series[i]] / VELOCIDAD_KMH[sistema] * FACTOR_CICLO for i in idx])
         flota_mod = flota * frac_modelada.get(g, 1.0)
         k = float((lmax * ciclo_h).sum() / flota_mod)          # pasajeros por bus en el punto crítico
         for j, i in enumerate(idx):
-            f = float(np.clip(lmax[j] / k, 3.0, 60.0))
             r = cfg["rutas"][series[i]]
-            r["buses_hora"] = perfil(f)
-            r["oferta"] = {"buses_hora_punta": round(f, 2), "intervalo_punta_min": round(60 / f, 2),
+            asientos = (r.get("vehiculo") or cfg["vehiculo"])["asientos"]
+            f_punta = float(np.clip(L["LAB"][i, list(HORAS_PUNTA)].max() / k, F_MIN, F_MAX))
+            bh = {}
+            for b in BUCKETS:
+                fila = []
+                for h in range(24):
+                    if h not in HORAS_SERVICIO:
+                        fila.append(0.0)
+                        continue
+                    diseno = k if h in HORAS_PUNTA else asientos
+                    fila.append(round(float(np.clip(L[b][i, h] / diseno, F_MIN, f_punta)), 3))
+                bh[b] = fila
+            r["buses_hora"] = bh
+            r["oferta"] = {"buses_hora_punta": round(f_punta, 2), "intervalo_punta_min": round(60 / f_punta, 2),
                            "carga_max_punta_pax_h": round(float(lmax[j])), "hora_punta": h_punta,
+                           "carga_diseno_punta": round(k, 1), "carga_diseno_valle": asientos,
                            "largo_km": round(largo_km[series[i]], 1), "ciclo_h": round(float(ciclo_h[j]), 2),
                            "flota_grupo": flota, "fraccion_flota_rutas_modeladas": round(frac_modelada.get(g, 1.0), 3),
                            "fuente_flota": fuente}
-            resumen.append((series[i], round(60 / f, 1), round(float(lmax[j])), round(k, 1)))
+            resumen.append((series[i], round(60 / f_punta, 1), round(float(lmax[j])), round(k, 1),
+                            "valle LAB 12h:", round(60 / bh["LAB"][12], 1), "min"))
     cfg["oferta"] = {
-        "metodo": "flota publicada / tiempo de ciclo, repartida por carga máxima en punta (Ceder)",
+        "metodo": "método del punto de carga máxima (Ceder): punta = flota publicada / ciclo repartida "
+                  "por carga máxima (carga de diseño k común); fuera de punta carga de diseño = asientos; "
+                  f"frecuencia entre {F_MIN} buses/h y la de punta; servicio 05:00-22:59",
         "velocidad_comercial_kmh": VELOCIDAD_KMH[sistema], "factor_ciclo": FACTOR_CICLO,
-        "ratio_hora": RATIO_HORA, "ratio_dia": RATIO_DIA,
-        "fuente_ratios": "Infobae oct. 2026 (Metropolitano: punta 2-4, valle 5-7, extremos 8-12 min); "
-                         "intervalos publicados 201/204/301 (sábado y domingo)",
+        "horas_punta": list(HORAS_PUNTA),
     }
     return resumen
 

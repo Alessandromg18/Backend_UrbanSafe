@@ -18,7 +18,8 @@ API REST y motor de inferencia analítica desarrollado para **UrbanSafe**, respo
 
 - **Cambios pendientes en el frontend:** [docs/INTEGRACION_FRONTEND.md](docs/INTEGRACION_FRONTEND.md).
 - **Tests:** `pip install pytest && python -m pytest tests` (algoritmo de Furness contra la Tabla 5.7 de Ortúzar y Willumsen, calendario, API y latencia P95).
-- **Regenerar o evaluar:** `python scripts/construir_linea_metro_l1.py`, `python scripts/construir_linea_troncal.py`, `python scripts/construir_rutas_bus.py --datos <DPD_project>/deliveries/week10/data_processed/clean`, `python scripts/evaluar_od_metro_l1.py` y `python scripts/evaluar_ocupacion.py`.
+- **Versión de modelos: 1.1.0** (`models/manifest.json`; la API verifica los sha256 al cargar).
+- **Regenerar o evaluar:** `python scripts/construir_linea_metro_l1.py`, `python scripts/construir_linea_troncal.py`, `python scripts/construir_rutas_bus.py --datos <DPD_project>/deliveries/week10/data_processed/clean`, `python scripts/evaluar_od_metro_l1.py`, `python scripts/evaluar_ocupacion.py` y `python scripts/serializar_v1_1_0.py`.
 
 
 ## Stack Tecnológico

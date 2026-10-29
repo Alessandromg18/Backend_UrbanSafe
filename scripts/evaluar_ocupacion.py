@@ -127,11 +127,47 @@ def evaluar(sistema: str) -> dict:
     return out
 
 
+def comparar_v1(sistema: str) -> dict:
+    """Proxy v1 (presión de abordaje, umbrales p60/p90 por franja) vs ocupación v2, ambos con las
+    subidas observadas del test: cuánto cambia la clase que ve el usuario y por qué."""
+    m = ModeloSistema.cargar(sistema, verificar_hash=False)
+    ctx = pd.read_parquet(RAIZ / "data" / "context" / f"{sistema}_2025.parquet")
+    c1, c2, horas = [], [], []
+    for d in DIAS:
+        Y = ctx.loc[d:d + pd.Timedelta(hours=23), m.series].to_numpy(float).T
+        v1 = V.clases_desde_crowding(m.crowding, V.crowding_dia(m.crowding, m.series, Y, d))
+        obs_u = observado_unidades(sistema, m.linea, d) if hasattr(m.linea, "rutas") else None
+        r = (m.linea.aplicar(Y, m.series, V.bucket_dia(d), obs_u) if obs_u is not None
+             else m.linea.aplicar(Y, m.series, V.bucket_dia(d)))
+        asc = np.nan_to_num(r.ocupacion["asc"].astype(float), nan=-1)
+        desc = np.nan_to_num(r.ocupacion["desc"].astype(float), nan=-1)
+        v2 = np.where(asc >= desc, r.clase["asc"], r.clase["desc"])     # sentido más cargado
+        serv = v2 != "Sin_servicio"
+        c1.append(v1[serv]); c2.append(v2[serv])
+        horas.append(np.broadcast_to(np.arange(24), v1.shape)[serv])
+    c1, c2, h = np.concatenate(c1).astype(str), np.concatenate(c2).astype(str), np.concatenate(horas)
+    tab = pd.crosstab(pd.Series(c1, name="v1"), pd.Series(c2, name="v2"), normalize="index").round(3)
+    punta = np.isin(h, [7, 8, 18, 19])
+    valle = np.isin(h, [11, 12, 13, 14])
+    sat = lambda c, mask: round(float((c[mask] == "Saturado").mean()), 3)  # noqa: E731
+    return {
+        "acuerdo_clase": round(float((c1 == c2).mean()), 4),
+        "v1_saturado_que_v2_ve_con_asientos": round(float(((c1 == "Saturado") & (c2 == "Asientos")).sum()
+                                                          / max((c1 == "Saturado").sum(), 1)), 3),
+        "saturado_en_punta": {"v1": sat(c1, punta), "v2": sat(c2, punta)},
+        "saturado_en_valle": {"v1": sat(c1, valle), "v2": sat(c2, valle)},
+        "distribucion": {"v1": pd.Series(c1).value_counts(normalize=True).round(3).to_dict(),
+                         "v2": pd.Series(c2).value_counts(normalize=True).round(3).to_dict()},
+        "matriz_v1_a_v2": {k: v for k, v in tab.to_dict(orient="index").items()},
+    }
+
+
 def main() -> None:
     res = {"dias_test": f"{DIAS[0].date()} a {DIAS[-1].date()} ({len(DIAS)} días)",
            "verdad": "ocupación calculada con las subidas observadas por la misma cadena"}
     for s in ("metro_l1", "troncal", "corredor", "alimentador"):
         res[s] = evaluar(s)
+        res[s]["comparacion_proxy_v1"] = comparar_v1(s)
         print(s, json.dumps(res[s], ensure_ascii=False))
     (RAIZ / "models" / "evaluacion_ocupacion.json").write_text(json.dumps(res, ensure_ascii=False, indent=2),
                                                                encoding="utf-8")

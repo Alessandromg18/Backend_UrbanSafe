@@ -1,0 +1,214 @@
+{
+  "version": "1.1.0",
+  "fecha": "2026-10-29T01:59:04-05:00",
+  "commit_base": "8b82d43",
+  "cambios": "aforo v2: ocupación a bordo con matriz O-D en los 4 sistemas; LightGBM en producción; día homólogo 2025; orden_upstream corregido (bug de nombres)",
+  "dia_referencia_verificacion": "2025-12-15",
+  "entorno": {
+    "python": "3.12.2",
+    "lightgbm": "4.7.0",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.9.1"
+  },
+  "artefactos": {
+    "metro_l1/aforo_histgb.joblib": {
+      "sha256": "782889103379d86f4f41acde4883f05896404c0d4fdf47442417790290be69e6",
+      "bytes": 1086680
+    },
+    "metro_l1/anomalias.json": {
+      "sha256": "a1255568988f59c58ecdab83f0caaba2d54ae1c3248d6d8947403e4a8ef3b21d",
+      "bytes": 1637
+    },
+    "metro_l1/conformal.json": {
+      "sha256": "e86f58b3de7980f845eda19a158715dac2a6b85a91de640fb637558f9e180cd3",
+      "bytes": 2272
+    },
+    "metro_l1/conformal_ligero.json": {
+      "sha256": "4d58992eea280cfcd0f154abb5ff48a2318a278fbedae41c62c3d4b2f0d87a3e",
+      "bytes": 2261
+    },
+    "metro_l1/crowding_config.json": {
+      "sha256": "e155bbe9ea781e1e03060e7c866f68c1a984ec3b48b4e61cc40fbfb9d71a5a9e",
+      "bytes": 1500
+    },
+    "metro_l1/lightgbm.txt": {
+      "sha256": "dda2fc91e562f526aeaf060ec445d5bd502f6471a50d687e027487ccc214fcea",
+      "bytes": 3237363
+    },
+    "metro_l1/lightgbm_meta.json": {
+      "sha256": "cfa7fa200962a9440e0145f5a06b156bb5fc4694eb0e4fec84fc26e270b26a68",
+      "bytes": 1198
+    },
+    "metro_l1/linea_config.json": {
+      "sha256": "a5d3e47c6f71172fdb5475bd4ae6bb1cbbfabc35d2fd050cac1cf31783f73d74",
+      "bytes": 8157
+    },
+    "metro_l1/model_card.json": {
+      "sha256": "bd6080eff2058135d0fdf5415cfda0efc7b0b0ad78e50476425cc360bdc9c574",
+      "bytes": 17840
+    },
+    "metro_l1/od_evaluacion.json": {
+      "sha256": "ebf03f7594124b2fdbd4244d8b09465229a5a058f1b99a4f0684e949b0dbf694",
+      "bytes": 5428
+    },
+    "metro_l1/referencia_v1_1_0.csv": {
+      "sha256": "06117ee32ea79f50be75671f5ae794afad68dfe3f5709fa5b146b59999e1f0d6",
+      "bytes": 206640
+    },
+    "troncal/aforo_histgb.joblib": {
+      "sha256": "e792253d8bc7bfcd771a32cbb8cda6dbf412bb44e2c52112227ab31bde25f7b5",
+      "bytes": 1086968
+    },
+    "troncal/anomalias.json": {
+      "sha256": "fd8578873c531de2b7c30bbdc97ca82295a91bc6e8e0a3d964a9088ceb3fece9",
+      "bytes": 1649
+    },
+    "troncal/conformal.json": {
+      "sha256": "ca150972f813d8e0f647fb5f840f745dc3585cf9c3c21688848e16344f88f359",
+      "bytes": 2456
+    },
+    "troncal/conformal_ligero.json": {
+      "sha256": "09d677e5dfc4e4cf0fe289b738edab619b3f9742eb3de43d59905dbb9a5ba03b",
+      "bytes": 2449
+    },
+    "troncal/crowding_config.json": {
+      "sha256": "4009737e31045f0e4df2054b30ae454fed2e4ca4eb375e5e199a0fc27fd970f2",
+      "bytes": 1959
+    },
+    "troncal/lightgbm.txt": {
+      "sha256": "574e71590ad643e74e63dd1e2723f339beed9912377668d767e12997efb35a22",
+      "bytes": 961533
+    },
+    "troncal/lightgbm_meta.json": {
+      "sha256": "594501245b0b06dd0e24ac0e58f8350e3bd4fe3c751c87d4209ad97ee512ce43",
+      "bytes": 1543
+    },
+    "troncal/linea_config.json": {
+      "sha256": "188c91a6582b1c0952a7fcfe95a7f329cb509dfc7a45b9d901ca7022bbb72053",
+      "bytes": 6889
+    },
+    "troncal/model_card.json": {
+      "sha256": "e6d4e9c0bdc34373e35b143d07134f3cb38765de40d15b4e468c618548444145",
+      "bytes": 18166
+    },
+    "troncal/referencia_v1_1_0.csv": {
+      "sha256": "43097b5c5fdaa2528e6d83d0e87775d3719583a2d1e2a7e6ad548450e3e9d569",
+      "bytes": 386769
+    },
+    "corredor/aforo_histgb.joblib": {
+      "sha256": "9aeaca2915d44925b0671e9130d455ca89896f672d91c64a209d7e6b9d57c4e2",
+      "bytes": 1086696
+    },
+    "corredor/anomalias.json": {
+      "sha256": "25563b23a4efecd95afcb5cc536624a155d72bd26838f5d8ede6edb654bfb748",
+      "bytes": 1685
+    },
+    "corredor/conformal.json": {
+      "sha256": "a84ac12a9a8940ed6b1c8ec5b841e4b0801ccab606f9a3e16466f11a379070d8",
+      "bytes": 2461
+    },
+    "corredor/conformal_ligero.json": {
+      "sha256": "c73397349c0ed9a471d76639ab28e4e5b30fefed84ff22d4553df74e4a56bbad",
+      "bytes": 2456
+    },
+    "corredor/crowding_config.json": {
+      "sha256": "89cd91661f15d8d810dbc345aaf0c5b17dfa45bfd3162adcee1d72778808e44b",
+      "bytes": 794
+    },
+    "corredor/lightgbm.txt": {
+      "sha256": "7f8a9ddc9f8c0fc9e64876214f23a08d5bcd9e042586dc0c23a783624c4879bd",
+      "bytes": 888791
+    },
+    "corredor/lightgbm_meta.json": {
+      "sha256": "b90c0393c579372e5f1e21b798322f60ba143dd2891add089eb6bb2da2e8db1e",
+      "bytes": 828
+    },
+    "corredor/model_card.json": {
+      "sha256": "ecdd65a70a8060aec605175adc575ad95690a47f04548afc41f32508c50bac22",
+      "bytes": 17559
+    },
+    "corredor/referencia_v1_1_0.csv": {
+      "sha256": "8943ce420121a060fc30c650f33df58a68808c289b1a2deb69587dc93c8611b3",
+      "bytes": 95978
+    },
+    "corredor/referencia_v1_1_0_paradas.parquet": {
+      "sha256": "4d6e47d2d7805399b1cf8197152a8e04300cadf01896263129fac5256b32799d",
+      "bytes": 710745
+    },
+    "corredor/rutas_config.json": {
+      "sha256": "78dea340856ab0ac6c9c5a17f72158819402d46841f5d37f0b5f8dd90ae2c839",
+      "bytes": 108666
+    },
+    "corredor/rutas_participaciones.npz": {
+      "sha256": "bf95aabcadc449484c7ee319e19b331c4672d622d05a0904a501d24f0296adff",
+      "bytes": 187402
+    },
+    "alimentador/aforo_histgb.joblib": {
+      "sha256": "62ffbcb07fefb6e3c865c4a64e0669258b2c4009426e33b4968bfbb25eb9be61",
+      "bytes": 1086792
+    },
+    "alimentador/anomalias.json": {
+      "sha256": "7a412d53e8e097ed87ab7f14f50186d8edf763ffad1a563c623fa8f99b3dec33",
+      "bytes": 1675
+    },
+    "alimentador/conformal.json": {
+      "sha256": "501a34c652beb2765594bfe1bf8eae5faa99668befcabf31c4e1defed2a793dc",
+      "bytes": 2443
+    },
+    "alimentador/conformal_ligero.json": {
+      "sha256": "501a34c652beb2765594bfe1bf8eae5faa99668befcabf31c4e1defed2a793dc",
+      "bytes": 2443
+    },
+    "alimentador/crowding_config.json": {
+      "sha256": "9d7f06b9c6cddcb6f063b9bed45953833952cdfbf6f078e17465f26e93654c4e",
+      "bytes": 742
+    },
+    "alimentador/lightgbm.txt": {
+      "sha256": "6fe7805cac1ea2fe9c444cc2acc141649b7bd63eef1db095b6c04550917dd6ae",
+      "bytes": 4067796
+    },
+    "alimentador/lightgbm_meta.json": {
+      "sha256": "08c1120f6981fb53ea8a1ab705c2e2acc34adaeb79ea1fe7323114b0cf536b51",
+      "bytes": 1133
+    },
+    "alimentador/model_card.json": {
+      "sha256": "3399de7a4f78e8f8b76993328d2cdaa064f844183fea58e7b02b7e06dd04bed9",
+      "bytes": 17992
+    },
+    "alimentador/referencia_v1_1_0.csv": {
+      "sha256": "2dfcf32c6024f0569fb9a87beb87111459def51a8546369231a011cb208e0bee",
+      "bytes": 186290
+    },
+    "alimentador/rutas_config.json": {
+      "sha256": "68629295d8a696bae633bff4374eb97e015736e53e196c15e3b111d1fa882c22",
+      "bytes": 45932
+    },
+    "alimentador/rutas_participaciones.npz": {
+      "sha256": "d0a284d3fd507c84d0b40824ef60b7d32dddb00b0316238a3a58ffbcb672121b",
+      "bytes": 16110
+    }
+  },
+  "datos": {
+    "data/context/alimentador_2025.parquet": {
+      "sha256": "8d94e600326c8a2f6fdedeadfc4aa093bfcea8a5f1cb10150191449edb182736",
+      "bytes": 346434
+    },
+    "data/context/corredor_2025.parquet": {
+      "sha256": "83f8c0ed60022cd195331bccece19cd4898f24619f66642a8b889cd7cf7fef6f",
+      "bytes": 310538
+    },
+    "data/context/metro_l1_2025.parquet": {
+      "sha256": "ec2b52c1c111c885cc9cd5a631dcb704273b9241d1fd57746bf47d6b5b13c615",
+      "bytes": 577145
+    },
+    "data/context/troncal_2025.parquet": {
+      "sha256": "6f72b6617160ae1f73f24aabff7e9100b0e1de17f87b3ec1dd8e3bbc06845166",
+      "bytes": 765707
+    },
+    "data/geo/mapeo_alimentadores.json": {
+      "sha256": "97e450b6136df71f539ddd42ba02c2366272407acf7254acfc96e3c671ce34f6",
+      "bytes": 1439
+    }
+  }
+}

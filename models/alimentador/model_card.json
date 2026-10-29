@@ -1,6 +1,6 @@
 {
   "nombre": "urbansafe-demanda-alimentador",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "sistema": "alimentador",
   "titulo": "Alimentadores",
   "grano": "ruta",
@@ -521,5 +521,66 @@
     "umbrales p60/p90 por franja: 'Saturado' es relativo a la franja (ver aforo_sensibilidad_umbrales.csv)",
     "un solo año de historia (2025); feriados móviles 2026 tomados del calendario oficial",
     "paros de transportistas no se anticipan: el detector de anomalías los marca después"
-  ]
+  ],
+  "aforo_v2": {
+    "version": "1.1.0",
+    "metodo": "carga máxima del bus = subidas del sentido por hora / buses por hora: en un alimentador casi todos los viajes empiezan o terminan en la estación de integración, así que el tramo junto al terminal lleva a todos los pasajeros del sentido (cota superior cuando hay viajes locales)",
+    "capa": "rutas_config.json",
+    "artefactos": [
+      "rutas_config.json",
+      "rutas_participaciones.npz"
+    ],
+    "modelo_demanda_produccion": "lightgbm (modo ligero)",
+    "salida": "ocupacion_{asc,desc}, carga_{asc,desc}, aforo_{asc,desc}, eta_{asc,desc}, sentido_critico; crowding_index y aforo = sentido más cargado (compatibles con v1)",
+    "evaluacion_test": {
+      "dias": "2025-11-01 a 2025-12-31 (61 días)",
+      "nivel": "nivel_serie",
+      "lightgbm": {
+        "n": 50508,
+        "accuracy": 0.8612,
+        "f1_macro": 0.5233,
+        "f1_weighted": 0.8522,
+        "balanced_accuracy": 0.4962,
+        "MAE_pasajeros_vehiculo": 5.05,
+        "WMAPE_carga": 0.4996
+      },
+      "media_4sem": {
+        "n": 50508,
+        "accuracy": 0.8213,
+        "f1_macro": 0.4669,
+        "f1_weighted": 0.8214,
+        "balanced_accuracy": 0.4642,
+        "MAE_pasajeros_vehiculo": 6.5,
+        "WMAPE_carga": 0.6432
+      },
+      "RNF_01": {
+        "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
+        "cumple": false
+      }
+    },
+    "comparacion_proxy_v1": {
+      "acuerdo_clase": 0.6809,
+      "saturado_en_punta": {
+        "v1": 0.064,
+        "v2": 0.118
+      },
+      "saturado_en_valle": {
+        "v1": 0.071,
+        "v2": 0.013
+      },
+      "distribucion": {
+        "v1": {
+          "Asientos": 0.646,
+          "De_pie": 0.273,
+          "Saturado": 0.08
+        },
+        "v2": {
+          "Asientos": 0.738,
+          "De_pie": 0.209,
+          "Saturado": 0.054
+        }
+      }
+    },
+    "documentacion": "docs/MODELO_OCUPACION.md"
+  }
 }

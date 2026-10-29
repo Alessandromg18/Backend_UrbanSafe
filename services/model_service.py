@@ -36,7 +36,7 @@ class PrediccionError(ValueError):
 
 @lru_cache(maxsize=None)
 def modelo(sistema: str) -> ModeloSistema:
-    return ModeloSistema.cargar(sistema, verificar_hash=False)
+    return ModeloSistema.cargar(sistema, verificar_hash=True)   # sha256 contra models/manifest.json
 
 
 @lru_cache(maxsize=None)
