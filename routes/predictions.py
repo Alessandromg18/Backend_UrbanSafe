@@ -1,143 +1,202 @@
-from datetime import datetime
-from flask import Blueprint, jsonify, request
-from services.model_service import ModelService
-import pandas as pd
+"""Endpoints de predicción de demanda, ocupación a bordo, espera y recomendación.
 
-predictions_bp = Blueprint(
-    "predictions",
-    __name__
-)
+Las horas y fechas son de Lima (UTC-5). Para días sin datos ATU propios (posteriores a 2025) el
+pronóstico se calcula con el día homólogo de 2025 y la respuesta lo declara en ``referencia``.
+"""
+import math
+
+import pandas as pd
+from flask import Blueprint, jsonify, request
+
+from routes.stations import load_all_stations_into_memory
+from services import calendario
+from services import model_service as MS
+from services.mapeo_estaciones import serie_de_estacion
+
+predictions_bp = Blueprint("predictions", __name__)
+
+
+def _num(x, nd=None):
+    if x is None:
+        return None
+    try:
+        x = float(x)
+    except (TypeError, ValueError):
+        return None
+    if math.isnan(x) or math.isinf(x):
+        return None
+    return round(x, nd) if nd is not None else x
+
+
+def _item(fila: dict, sentido: str | None, sentidos: dict | None) -> dict:
+    """Una hora de pronóstico; con ``sentido`` usa la ocupación de ese sentido."""
+    sfx = f"_{sentido}" if sentido and f"ocupacion_{sentido}" in fila else ""
+    ocup = fila.get(f"ocupacion{sfx}") if sfx else fila.get("crowding_index")
+    clase = fila.get(f"aforo{sfx}") if sfx else fila.get("aforo")
+    eta = _num(fila.get(f"eta{sfx}") if sfx else fila.get("eta_min"))
+    rec = fila.get(f"recomendacion{sfx}") if sfx else fila.get("recomendacion")
+    hw = _num(fila.get("intervalo_min"))
+    eta2 = (eta + hw) if (eta is not None and hw is not None) else _num(fila.get("eta2_min"))
+    out = {
+        "datetime": pd.Timestamp(fila["fecha_hora"]).strftime("%Y-%m-%d %H:%M"),
+        "value": _num(fila.get("validaciones_pron"), 1),
+        "band80": {"low": _num(fila.get("banda80_lo"), 1), "high": _num(fila.get("banda80_hi"), 1)},
+        "crowding": _num(ocup, 3),
+        "class": clase,
+        "eta_min": _num(eta, 1),
+        "eta2_min": _num(eta2, 1),
+        "recommendation": rec,
+        # P(el vehículo que te toca llega sin espacio), tiempo medio a bordo y multiplicador de
+        # hacinamiento: las entradas del costo generalizado de la recomendación
+        "probabilidad_no_subir": _num(fila.get(f"p_no_subir{sfx}") if sfx else fila.get("p_no_subir"), 3),
+        "tiempo_viaje_min": _num(fila.get(f"viaje{sfx}") if sfx else fila.get("viaje_min"), 1),
+        "multiplicador_hacinamiento": _num(fila.get(f"multiplicador{sfx}") if sfx else fila.get("multiplicador"), 2),
+    }
+    if fila.get("metodo_aforo") == "ocupacion_od_v2_paradero":
+        out.update({"sentido": fila.get("sentido_critico"), "paradero": fila.get("nombre"),
+                    "pasajeros_por_tren": _num(fila.get("carga"), 0),
+                    "bajadas_estimadas": _num(fila.get("bajadas_est"), 1),
+                    "intervalo_min": _num(hw, 1),
+                    "alternativa": fila.get("alternativa") if rec == "cambiar_paradero" else None})
+    elif fila.get("metodo_aforo") == "ocupacion_od_v2":
+        out.update({
+            "sentido": (sentidos or {}).get(sentido) if sfx else fila.get("sentido_critico"),
+            "pasajeros_por_tren": _num(fila.get(f"carga{sfx}") if sfx else None, 0),
+            "bajadas_estimadas": _num(fila.get("bajadas_est"), 1),
+            "intervalo_min": _num(hw, 1),
+            "por_sentido": {
+                s: {"descripcion": (sentidos or {}).get(s),
+                    "ocupacion": _num(fila.get(f"ocupacion_{s}"), 3),
+                    "pasajeros_por_tren": _num(fila.get(f"carga_{s}"), 0),
+                    "class": fila.get(f"aforo_{s}"),
+                    "eta_min": _num(fila.get(f"eta_{s}"), 1),
+                    "recommendation": fila.get(f"recomendacion_{s}")}
+                for s in ("asc", "desc")
+            },
+        })
+        if not sfx:
+            crit = "asc" if fila.get("sentido_critico") == (sentidos or {}).get("asc") else "desc"
+            out["pasajeros_por_tren"] = out["por_sentido"][crit]["pasajeros_por_tren"]
+    return out
+
+
+def _hora_param() -> int:
+    hora = request.args.get("hour", default=None, type=int)
+    if hora is None:
+        return calendario.ahora_lima().hour
+    if not 0 <= hora <= 23:
+        raise MS.PrediccionError("La hora debe estar entre 0 y 23")
+    return hora
+
+
+def _meta(res: dict) -> dict:
+    m = MS.modelo(res["sistema"])
+    return {
+        "system": res["sistema"], "series": res["serie"], "model": "lightgbm",
+        "nivel": res.get("nivel", "serie"),
+        "metodo_aforo": "ocupacion_od_v2" if m.linea is not None else "presion_abordaje_v1",
+        "unidades": {
+            "value": "subidas (validaciones) por hora en la estación",
+            "crowding": ("ocupación del vehículo = pasajeros a bordo / capacidad nominal"
+                         if m.linea is not None else "índice de presión de abordaje (v1)"),
+            "eta_min": "espera esperada en andén (min)",
+        },
+        "sentido": res["sentido"], "sentidos": res["sentidos"], "referencia": res["referencia"],
+    }
+
+
+def _error(e: Exception):
+    if isinstance(e, MS.PrediccionError):
+        return jsonify({"error": str(e)}), e.status
+    return jsonify({"error": f"Error interno: {e}"}), 500
+
+
+def _buscar_estacion(station_id, ruta: str | None = None):
+    """Estación por id. Un paradero de corredor puede servir a varias rutas con el mismo código:
+    ``ruta`` elige la del marcador que tocó el usuario (si no, la primera)."""
+    objetivo = str(station_id).strip().lower()
+    candidatas = [s for s in load_all_stations_into_memory() if str(s["id"]).strip().lower() == objetivo]
+    if ruta:
+        con_ruta = [s for s in candidatas if str((s.get("raw_properties") or {}).get("ruta")) == str(ruta)]
+        candidatas = con_ruta or candidatas
+    return candidatas[0] if candidatas else None
+
+
+@predictions_bp.route("/estacion/<path:station_id>", methods=["GET"])
+def get_station_prediction(station_id):
+    """Estado actual + pronóstico del día de una estación/paradero (una sola llamada).
+
+    Query: ``dia`` (YYYY-MM-DD, por defecto hoy en Lima), ``hour`` (0-23, por defecto la hora
+    actual de Lima), ``hacia_id`` (id de la estación destino: define el sentido de viaje),
+    ``ruta`` (corredores: ruta del marcador cuando el código de paradero es compartido).
+    ---
+    tags:
+      - Predictions
+    """
+    try:
+        est = _buscar_estacion(station_id, request.args.get("ruta"))
+        if est is None:
+            return jsonify({"error": f"Estación no encontrada: {station_id}"}), 404
+        sistema, serie = serie_de_estacion(est)
+        if serie is None:
+            return jsonify({"error": "Sin predicción: este paradero no tiene datos de validaciones ATU",
+                            "station": est["name"], "system": est["system"]}), 404
+        hacia = None
+        if request.args.get("hacia_id"):
+            dest = _buscar_estacion(request.args["hacia_id"])
+            hacia = serie_de_estacion(dest)[1] if dest else None
+        # Corredores: el código del paradero ya fija ruta y sentido -> detalle del paradero
+        paradero = (est.get("raw_properties") or {}).get("cod_paradero") if sistema == "corredor" else None
+        res = MS.prediccion_serie(sistema, serie, request.args.get("dia"), hacia=hacia, paradero=paradero)
+        hora = _hora_param()
+        items = [_item(f, res["sentido"], res["sentidos"]) for f in res["filas"]]
+        actual = next(i for i, f in zip(items, res["filas"]) if pd.Timestamp(f["fecha_hora"]).hour == hora)
+        return jsonify({**_meta(res), "station": est["name"], "current": actual, "forecast": items}), 200
+    except Exception as e:  # noqa: BLE001
+        return _error(e)
+
 
 @predictions_bp.route("/<system>/<series>", methods=["GET"])
 def get_prediction(system, series):
-    modo = request.args.get("modo", "ligero")
-    target_hour = request.args.get("hour", default=None, type=int)  # Parámetro opcional de hora (0-23)
+    """Predicción de una hora (por defecto la hora actual de Lima).
 
-    # Fecha actual de referencia (2026) y valor por defecto limpio
-    hoy_str = datetime.now().strftime("%Y-%m-%d")
-    dia = request.args.get("dia", hoy_str)
-    if not dia or str(dia).strip() in ["", "undefined", "null", "None"]:
-        dia = hoy_str
-
+    Query: ``dia``, ``hour``, ``sentido`` (asc|desc) o ``hacia`` (estación destino).
+    """
     try:
-        resultados = ModelService.obtener_prediccion(system, dia, modo=modo, unidad=series)
-        
-        if not resultados:
-            return jsonify({"error": f"No se encontró información para la serie '{series}'"}), 404
-
-        # Si se especifica una hora, filtramos el resultado de esa hora exacta (0 a 23)
-        if target_hour is not None:
-            if target_hour < 0 or target_hour > 23:
-                return jsonify({"error": "La hora debe estar entre 0 y 23"}), 400
-            
-            p = next((res for res in resultados if pd.to_datetime(res["fecha_hora"]).hour == target_hour), resultados[0])
-        else:
-            p = resultados[0]  # Por defecto la primera
-
-        # 1. Ajuste de fecha al 2026 en formato corto (YYYY-MM-DD HH:MM)
-        raw_dt = p.get("fecha_hora")
-        if raw_dt:
-            dt_parsed = pd.to_datetime(raw_dt)
-            hora_del_modelo = dt_parsed.hour
-            minuto_actual = datetime.now().minute
-            hora_str = f"{hora_del_modelo:02d}:{minuto_actual:02d}"
-            formatted_date = f"{hoy_str} {hora_str}"
-        else:
-            formatted_date = f"{hoy_str} 00:00"
-
-        # 2. Redondear los valores de ETA para evitar decimales largos
-        eta_next = p.get("eta_min")
-        eta_second = p.get("eta2_min")
-        
-        rounded_eta_next = round(float(eta_next), 1) if eta_next is not None else None
-        rounded_eta_second = round(float(eta_second), 1) if eta_second is not None else None
-
+        res = MS.prediccion_serie(system, series, request.args.get("dia"),
+                                  sentido=request.args.get("sentido"), hacia=request.args.get("hacia"))
+        hora = _hora_param()
+        fila = next(f for f in res["filas"] if pd.Timestamp(f["fecha_hora"]).hour == hora)
+        it = _item(fila, res["sentido"], res["sentidos"])
         return jsonify({
-            "system": system,
-            "series": series,
-            "datetime": formatted_date,  # <--- Fecha limpia y en 2026
-            "prediction": p.get("validaciones_pron"),
-            "band80": {
-                "low": p.get("banda80_lo"),
-                "high": p.get("banda80_hi")
-            },
-            "crowding": {
-                "index": p.get("crowding_index"),
-                "class": p.get("aforo")
-            },
-            "eta": {
-                "next": rounded_eta_next,       # <--- ETA redondeado
-                "second": rounded_eta_second    # <--- ETA redondeado
-            },
-            "recomendacion": p.get("recomendacion"),
-            "model": p.get("modelo", modo)
+            **_meta(res),
+            "datetime": it["datetime"],
+            "prediction": it["value"],
+            "band80": it["band80"],
+            "crowding": {"index": it["crowding"], "class": it["class"],
+                         "pasajeros_por_tren": it.get("pasajeros_por_tren")},
+            "eta": {"next": it["eta_min"], "second": it["eta2_min"]},
+            "recomendacion": it["recommendation"],
+            "detalle": it,
         }), 200
+    except Exception as e:  # noqa: BLE001
+        return _error(e)
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @predictions_bp.route("/<system>/<series>/forecast", methods=["GET"])
 def get_forecast(system, series):
-    """
-    Obtiene las próximas predicciones de una serie con fechas actualizadas al 2026 y ETAs redondeados.
-    """
-    hours = request.args.get("hours", default=6, type=int)
-    dia = request.args.get("dia")
-    modo = request.args.get("modo", "ligero")
-
-    # Fecha actual de referencia (2026)
-    hoy_str = datetime.now().strftime("%Y-%m-%d")
-    
-    if not dia or str(dia).strip() in ["", "undefined", "null", "None"]:
-        dia = hoy_str
-
-    if hours <= 0 or hours > 24:
-        return jsonify({
-            "error": "hours debe estar entre 1 y 24"
-        }), 400
-
+    """Pronóstico horario del día (``hours`` horas desde ``desde_hora``, por defecto 0-23)."""
     try:
-        # Obtenemos las predicciones del modelo (procesa internamente el histórico)
-        resultados = ModelService.obtener_prediccion(system, dia, modo=modo, unidad=series)
-        resultados_cortados = resultados[:hours]
-
-        predictions_list = []
-        for p in resultados_cortados:
-            # 1. Ajuste estricto de fecha: extraemos solo la hora del modelo y la unimos al día actual de 2026
-            raw_dt = p.get("fecha_hora")
-            if raw_dt:
-                dt_parsed = pd.to_datetime(raw_dt)
-                hora_del_modelo = dt_parsed.hour
-                minuto_actual = datetime.now().minute
-                hora_str = f"{hora_del_modelo:02d}:{minuto_actual:02d}"
-                # Forzamos que la fecha visible sea la de hoy (2026) con la hora del pronóstico
-                formatted_date = f"{hoy_str} {hora_str}"
-            else:
-                formatted_date = f"{hoy_str} 00:00"
-
-            # 2. Redondear los valores de ETA para evitar decimales extensos
-            eta_val = p.get("eta_min")
-            eta2_val = p.get("eta2_min")
-            
-            rounded_eta = round(float(eta_val), 1) if eta_val is not None else None
-            rounded_eta2 = round(float(eta2_val), 1) if eta2_val is not None else None
-
-            predictions_list.append({
-                "datetime": formatted_date, # Formato limpio: "2026-10-28 08:00"
-                "value": p.get("validaciones_pron"),
-                "crowding": p.get("crowding_index"),
-                "class": p.get("aforo"),
-                "eta_min": rounded_eta,
-                "eta2_min": rounded_eta2,
-                "recommendation": p.get("recomendacion")
-            })
-
-        return jsonify({
-            "system": system,
-            "series": series,
-            "predictions": predictions_list,
-            "model": modo
-        }), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        hours = request.args.get("hours", default=24, type=int)
+        desde = request.args.get("desde_hora", default=0, type=int)
+        if not 1 <= hours <= 24:
+            return jsonify({"error": "hours debe estar entre 1 y 24"}), 400
+        if not 0 <= desde <= 23:
+            return jsonify({"error": "desde_hora debe estar entre 0 y 23"}), 400
+        res = MS.prediccion_serie(system, series, request.args.get("dia"),
+                                  sentido=request.args.get("sentido"), hacia=request.args.get("hacia"))
+        filas = [f for f in res["filas"] if pd.Timestamp(f["fecha_hora"]).hour >= desde][:hours]
+        return jsonify({**_meta(res),
+                        "predictions": [_item(f, res["sentido"], res["sentidos"]) for f in filas]}), 200
+    except Exception as e:  # noqa: BLE001
+        return _error(e)

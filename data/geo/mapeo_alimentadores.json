@@ -1,0 +1,35 @@
+{
+  "fuente": "DPD_project deliveries/week10/export/paraderos.csv (columna unidad_modelo, Elmer Villegas)",
+  "servicio_a_serie": {
+    "ChimpuOcllo/SanJuanDeDios": "San Juan de Dios",
+    "ChimpuOcllo/Universitaria": "Universitaria",
+    "LosIncas/Carabayllo": "Carabayllo",
+    "LosIncas/Collique": "Collique",
+    "LosIncas/TorreBlanca": "Torre Blanca",
+    "Norte/AntunezDeMayolo": "Antúnez de Mayolo",
+    "Norte/Belaunde": "Belaunde",
+    "Norte/Bertello": "Bertello",
+    "Norte/Carabayllo": "Carabayllo",
+    "Norte/Collique": "Collique",
+    "Norte/Izaguirre": "Izaguirre",
+    "Norte/LaEnsenada": "Ensenada",
+    "Norte/LosAlisos": "Alisos",
+    "Norte/LosOlivos": "Los Olivos",
+    "Norte/MilagroDeJesus": "Milagro de Jesús",
+    "Norte/Naranjal": "Naranjal",
+    "Norte/Payet": "Payet",
+    "Norte/PuentePiedra": "Puente Piedra",
+    "Norte/Puno": "Puno",
+    "Norte/SantoDomingo": null,
+    "Norte/Tahuantinsuyo": "Tahuantinsuyo",
+    "Norte/Tungasuca": null,
+    "Sur/America": "Las Américas",
+    "Sur/CedrosDeVilla": "Cedros de Villa",
+    "Sur/LosProceres": "Los Próceres",
+    "Sur/VillaElSalvador": "Villa El Salvador",
+    "Universidad/Trapiche": "Trapiche"
+  },
+  "notas": {
+    "Sur/America": "asignado a la serie \"Las Américas\": Infobae (2023) lista \"América\" entre los alimentadores del sur (Matellini) y su patrón de demanda coincide con las demás rutas del sur"
+  }
+}

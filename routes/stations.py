@@ -90,6 +90,11 @@ def load_all_stations_into_memory():
         except Exception as e:
             print(f"Error leyendo {filename}: {e}")
 
+    # Serie del modelo de cada estación (None = sin datos ATU propios: la app no debe inventarla)
+    from services.mapeo_estaciones import serie_de_estacion
+    for s in stations:
+        s["model_system"], s["model_series"] = serie_de_estacion(s)
+
     _STATIONS_CACHE = stations
     return _STATIONS_CACHE
 

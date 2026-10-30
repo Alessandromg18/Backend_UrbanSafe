@@ -1,0 +1,360 @@
+{
+  "dias_test": "2025-11-01 a 2025-12-31 (61 días)",
+  "verdad": "ocupación calculada con las subidas observadas por la misma cadena",
+  "metro_l1": {
+    "nivel_serie": {
+      "lightgbm": {
+        "n": 54900,
+        "accuracy": 0.9309,
+        "f1_macro": 0.8558,
+        "f1_weighted": 0.9291,
+        "balanced_accuracy": 0.84,
+        "MAE_pasajeros_vehiculo": 40.56,
+        "WMAPE_carga": 0.0885
+      },
+      "media_4sem": {
+        "n": 54900,
+        "accuracy": 0.9183,
+        "f1_macro": 0.8299,
+        "f1_weighted": 0.9166,
+        "balanced_accuracy": 0.8213,
+        "MAE_pasajeros_vehiculo": 58.16,
+        "WMAPE_carga": 0.127
+      }
+    },
+    "recomendacion": {
+      "acuerdo_lightgbm": 0.9979,
+      "acuerdo_media_4sem": 0.9869,
+      "siempre_abordar": 0.9986,
+      "balanced_accuracy_lightgbm": 0.4997,
+      "distribucion_observada": {
+        "abordar": 0.9986,
+        "esperar_siguiente": 0.0014
+      },
+      "AC_03": "acuerdo >= 0.80"
+    },
+    "distribucion_clases_observadas": {
+      "De_pie": 0.7491,
+      "Asientos": 0.1719,
+      "Saturado": 0.079
+    },
+    "segundos": 1.7,
+    "RNF_01": {
+      "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
+      "cumple": true
+    },
+    "comparacion_proxy_v1": {
+      "acuerdo_clase": 0.3358,
+      "v1_saturado_que_v2_ve_con_asientos": 0.021,
+      "saturado_en_punta": {
+        "v1": 0.141,
+        "v2": 0.227
+      },
+      "saturado_en_valle": {
+        "v1": 0.183,
+        "v2": 0.04
+      },
+      "distribucion": {
+        "v1": {
+          "Asientos": 0.517,
+          "De_pie": 0.337,
+          "Saturado": 0.145
+        },
+        "v2": {
+          "De_pie": 0.78,
+          "Saturado": 0.145,
+          "Asientos": 0.075
+        }
+      },
+      "matriz_v1_a_v2": {
+        "Asientos": {
+          "Asientos": 0.093,
+          "De_pie": 0.8,
+          "Saturado": 0.107
+        },
+        "De_pie": {
+          "Asientos": 0.072,
+          "De_pie": 0.758,
+          "Saturado": 0.17
+        },
+        "Saturado": {
+          "Asientos": 0.021,
+          "De_pie": 0.757,
+          "Saturado": 0.222
+        }
+      }
+    }
+  },
+  "troncal": {
+    "nivel_serie": {
+      "lightgbm": {
+        "n": 96624,
+        "accuracy": 0.9312,
+        "f1_macro": 0.9259,
+        "f1_weighted": 0.9315,
+        "balanced_accuracy": 0.928,
+        "MAE_pasajeros_vehiculo": 6.59,
+        "WMAPE_carga": 0.0952
+      },
+      "media_4sem": {
+        "n": 96624,
+        "accuracy": 0.9079,
+        "f1_macro": 0.8987,
+        "f1_weighted": 0.9083,
+        "balanced_accuracy": 0.9039,
+        "MAE_pasajeros_vehiculo": 12.71,
+        "WMAPE_carga": 0.1836
+      }
+    },
+    "recomendacion": {
+      "acuerdo_lightgbm": 0.9683,
+      "acuerdo_media_4sem": 0.9535,
+      "siempre_abordar": 0.8938,
+      "balanced_accuracy_lightgbm": 0.9092,
+      "distribucion_observada": {
+        "abordar": 0.8938,
+        "esperar_siguiente": 0.1062
+      },
+      "AC_03": "acuerdo >= 0.80"
+    },
+    "distribucion_clases_observadas": {
+      "Asientos": 0.4584,
+      "De_pie": 0.3672,
+      "Saturado": 0.1743
+    },
+    "segundos": 2.5,
+    "RNF_01": {
+      "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
+      "cumple": true
+    },
+    "comparacion_proxy_v1": {
+      "acuerdo_clase": 0.3618,
+      "v1_saturado_que_v2_ve_con_asientos": 0.23,
+      "saturado_en_punta": {
+        "v1": 0.12,
+        "v2": 0.347
+      },
+      "saturado_en_valle": {
+        "v1": 0.131,
+        "v2": 0.182
+      },
+      "distribucion": {
+        "v1": {
+          "Asientos": 0.499,
+          "De_pie": 0.355,
+          "Saturado": 0.146
+        },
+        "v2": {
+          "De_pie": 0.415,
+          "Saturado": 0.298,
+          "Asientos": 0.286
+        }
+      },
+      "matriz_v1_a_v2": {
+        "Asientos": {
+          "Asientos": 0.324,
+          "De_pie": 0.403,
+          "Saturado": 0.273
+        },
+        "De_pie": {
+          "Asientos": 0.256,
+          "De_pie": 0.425,
+          "Saturado": 0.319
+        },
+        "Saturado": {
+          "Asientos": 0.23,
+          "De_pie": 0.432,
+          "Saturado": 0.337
+        }
+      }
+    }
+  },
+  "corredor": {
+    "nivel_serie": {
+      "lightgbm": {
+        "n": 26350,
+        "accuracy": 0.8309,
+        "f1_macro": 0.6669,
+        "f1_weighted": 0.8306,
+        "balanced_accuracy": 0.6439,
+        "MAE_pasajeros_vehiculo": 5.15,
+        "WMAPE_carga": 0.184
+      },
+      "media_4sem": {
+        "n": 26350,
+        "accuracy": 0.79,
+        "f1_macro": 0.577,
+        "f1_weighted": 0.7954,
+        "balanced_accuracy": 0.6098,
+        "MAE_pasajeros_vehiculo": 7.82,
+        "WMAPE_carga": 0.2791
+      }
+    },
+    "recomendacion": {
+      "acuerdo_lightgbm": 0.9908,
+      "acuerdo_media_4sem": 0.9671,
+      "siempre_abordar": 0.9906,
+      "balanced_accuracy_lightgbm": 0.5943,
+      "distribucion_observada": {
+        "abordar": 0.9906,
+        "esperar_siguiente": 0.0094
+      },
+      "AC_03": "acuerdo >= 0.80"
+    },
+    "distribucion_clases_observadas": {
+      "Asientos": 0.6714,
+      "De_pie": 0.3131,
+      "Saturado": 0.0155
+    },
+    "segundos": 12.4,
+    "nivel_paradero": {
+      "lightgbm": {
+        "n": 987102,
+        "accuracy": 0.9192,
+        "f1_macro": 0.6552,
+        "f1_weighted": 0.9181,
+        "balanced_accuracy": 0.6259,
+        "MAE_pasajeros_vehiculo": 3.88,
+        "WMAPE_carga": 0.1958
+      },
+      "media_4sem": {
+        "n": 987102,
+        "accuracy": 0.8908,
+        "f1_macro": 0.5551,
+        "f1_weighted": 0.897,
+        "balanced_accuracy": 0.63,
+        "MAE_pasajeros_vehiculo": 5.92,
+        "WMAPE_carga": 0.2984
+      }
+    },
+    "RNF_01": {
+      "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
+      "cumple": false
+    },
+    "comparacion_proxy_v1": {
+      "acuerdo_clase": 0.559,
+      "v1_saturado_que_v2_ve_con_asientos": 0.167,
+      "saturado_en_punta": {
+        "v1": 0.106,
+        "v2": 0.086
+      },
+      "saturado_en_valle": {
+        "v1": 0.102,
+        "v2": 0.002
+      },
+      "distribucion": {
+        "v1": {
+          "Asientos": 0.531,
+          "De_pie": 0.332,
+          "Saturado": 0.137
+        },
+        "v2": {
+          "Asientos": 0.508,
+          "De_pie": 0.464,
+          "Saturado": 0.029
+        }
+      },
+      "matriz_v1_a_v2": {
+        "Asientos": {
+          "Asientos": 0.672,
+          "De_pie": 0.314,
+          "Saturado": 0.014
+        },
+        "De_pie": {
+          "Asientos": 0.385,
+          "De_pie": 0.58,
+          "Saturado": 0.035
+        },
+        "Saturado": {
+          "Asientos": 0.167,
+          "De_pie": 0.761,
+          "Saturado": 0.072
+        }
+      }
+    }
+  },
+  "alimentador": {
+    "nivel_serie": {
+      "lightgbm": {
+        "n": 50508,
+        "accuracy": 0.8569,
+        "f1_macro": 0.5389,
+        "f1_weighted": 0.8489,
+        "balanced_accuracy": 0.509,
+        "MAE_pasajeros_vehiculo": 5.31,
+        "WMAPE_carga": 0.5252
+      },
+      "media_4sem": {
+        "n": 50508,
+        "accuracy": 0.8213,
+        "f1_macro": 0.4669,
+        "f1_weighted": 0.8214,
+        "balanced_accuracy": 0.4642,
+        "MAE_pasajeros_vehiculo": 6.5,
+        "WMAPE_carga": 0.6432
+      }
+    },
+    "recomendacion": {
+      "acuerdo_lightgbm": 0.9771,
+      "acuerdo_media_4sem": 0.967,
+      "siempre_abordar": 0.9769,
+      "balanced_accuracy_lightgbm": 0.5914,
+      "distribucion_observada": {
+        "abordar": 0.9769,
+        "esperar_siguiente": 0.0231
+      },
+      "AC_03": "acuerdo >= 0.80"
+    },
+    "distribucion_clases_observadas": {
+      "Asientos": 0.8569,
+      "De_pie": 0.116,
+      "Saturado": 0.0271
+    },
+    "segundos": 2.5,
+    "RNF_01": {
+      "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
+      "cumple": false
+    },
+    "comparacion_proxy_v1": {
+      "acuerdo_clase": 0.6809,
+      "v1_saturado_que_v2_ve_con_asientos": 0.342,
+      "saturado_en_punta": {
+        "v1": 0.064,
+        "v2": 0.118
+      },
+      "saturado_en_valle": {
+        "v1": 0.071,
+        "v2": 0.013
+      },
+      "distribucion": {
+        "v1": {
+          "Asientos": 0.646,
+          "De_pie": 0.273,
+          "Saturado": 0.08
+        },
+        "v2": {
+          "Asientos": 0.738,
+          "De_pie": 0.209,
+          "Saturado": 0.054
+        }
+      },
+      "matriz_v1_a_v2": {
+        "Asientos": {
+          "Asientos": 0.873,
+          "De_pie": 0.11,
+          "Saturado": 0.017
+        },
+        "De_pie": {
+          "Asientos": 0.533,
+          "De_pie": 0.368,
+          "Saturado": 0.099
+        },
+        "Saturado": {
+          "Asientos": 0.342,
+          "De_pie": 0.463,
+          "Saturado": 0.196
+        }
+      }
+    }
+  }
+}

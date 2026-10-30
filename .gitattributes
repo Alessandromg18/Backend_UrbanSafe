@@ -1,0 +1,5 @@
+# Artefactos de modelos: siempre LF (LightGBM no lee el modelo con CRLF en Windows)
+models/** -text
+data/** -text
+*.parquet binary
+*.joblib binary
