@@ -1,8 +1,15 @@
 {
-  "version": "1.1.0",
-  "fecha": "2026-10-29T01:59:04-05:00",
-  "commit_base": "8b82d43",
-  "cambios": "aforo v2: ocupación a bordo con matriz O-D en los 4 sistemas; LightGBM en producción; día homólogo 2025; orden_upstream corregido (bug de nombres)",
+  "version": "1.1.1",
+  "fecha": "2026-10-30T01:07:32-05:00",
+  "commit_base": "8d6737d",
+  "cambios": "Coordenada de la estación Bulevar corregida (Barranco); troncal reconstruido",
+  "historial": [
+    {
+      "version": "1.1.0",
+      "fecha": "2026-10-29T01:59:04-05:00",
+      "cambios": "aforo v2: ocupación a bordo con matriz O-D en los 4 sistemas; LightGBM en producción; día homólogo 2025; orden_upstream corregido (bug de nombres)"
+    }
+  ],
   "dia_referencia_verificacion": "2025-12-15",
   "entorno": {
     "python": "3.12.2",
@@ -41,18 +48,18 @@
       "bytes": 1198
     },
     "metro_l1/linea_config.json": {
-      "sha256": "a5d3e47c6f71172fdb5475bd4ae6bb1cbbfabc35d2fd050cac1cf31783f73d74",
+      "sha256": "19150b065a2491f035a01ecd14057a4199710253f5bb0019d7caa3fcc1df3978",
       "bytes": 8157
     },
     "metro_l1/model_card.json": {
-      "sha256": "bd6080eff2058135d0fdf5415cfda0efc7b0b0ad78e50476425cc360bdc9c574",
+      "sha256": "bdc6f1038daac37d69498e31cdac9080cd14d2322fa6e0e5fb70cf1f33ff5dfd",
       "bytes": 17840
     },
     "metro_l1/od_evaluacion.json": {
       "sha256": "ebf03f7594124b2fdbd4244d8b09465229a5a058f1b99a4f0684e949b0dbf694",
       "bytes": 5428
     },
-    "metro_l1/referencia_v1_1_0.csv": {
+    "metro_l1/referencia_salida_v2.csv": {
       "sha256": "06117ee32ea79f50be75671f5ae794afad68dfe3f5709fa5b146b59999e1f0d6",
       "bytes": 206640
     },
@@ -85,14 +92,14 @@
       "bytes": 1543
     },
     "troncal/linea_config.json": {
-      "sha256": "188c91a6582b1c0952a7fcfe95a7f329cb509dfc7a45b9d901ca7022bbb72053",
+      "sha256": "9a256aeda9c818794aac753fa3cadf5f1c8ac938baa87aad34a5fca96c00edae",
       "bytes": 6889
     },
     "troncal/model_card.json": {
-      "sha256": "e6d4e9c0bdc34373e35b143d07134f3cb38765de40d15b4e468c618548444145",
+      "sha256": "485cc0e2fe8da15ada6c2a11e5038f69d7f8f9dcf2e55d7dbdb09de22a5d4cc8",
       "bytes": 18166
     },
-    "troncal/referencia_v1_1_0.csv": {
+    "troncal/referencia_salida_v2.csv": {
       "sha256": "43097b5c5fdaa2528e6d83d0e87775d3719583a2d1e2a7e6ad548450e3e9d569",
       "bytes": 386769
     },
@@ -125,19 +132,19 @@
       "bytes": 828
     },
     "corredor/model_card.json": {
-      "sha256": "ecdd65a70a8060aec605175adc575ad95690a47f04548afc41f32508c50bac22",
+      "sha256": "5abbf3f6ee484b7d31848e923b7a56663aa534cfac3cbb3775f53bb1f778b066",
       "bytes": 17559
     },
-    "corredor/referencia_v1_1_0.csv": {
+    "corredor/referencia_salida_v2.csv": {
       "sha256": "8943ce420121a060fc30c650f33df58a68808c289b1a2deb69587dc93c8611b3",
       "bytes": 95978
     },
-    "corredor/referencia_v1_1_0_paradas.parquet": {
+    "corredor/referencia_salida_v2_paradas.parquet": {
       "sha256": "4d6e47d2d7805399b1cf8197152a8e04300cadf01896263129fac5256b32799d",
       "bytes": 710745
     },
     "corredor/rutas_config.json": {
-      "sha256": "78dea340856ab0ac6c9c5a17f72158819402d46841f5d37f0b5f8dd90ae2c839",
+      "sha256": "3372ffc063869603085d13d51d82c3cf74df43b7a557484655cc099a56cdec9d",
       "bytes": 108666
     },
     "corredor/rutas_participaciones.npz": {
@@ -173,15 +180,15 @@
       "bytes": 1133
     },
     "alimentador/model_card.json": {
-      "sha256": "3399de7a4f78e8f8b76993328d2cdaa064f844183fea58e7b02b7e06dd04bed9",
+      "sha256": "626335d67351b120771599a634fcc6aaf6fdfc886d872374444112dea4593ecc",
       "bytes": 17992
     },
-    "alimentador/referencia_v1_1_0.csv": {
+    "alimentador/referencia_salida_v2.csv": {
       "sha256": "2dfcf32c6024f0569fb9a87beb87111459def51a8546369231a011cb208e0bee",
       "bytes": 186290
     },
     "alimentador/rutas_config.json": {
-      "sha256": "68629295d8a696bae633bff4374eb97e015736e53e196c15e3b111d1fa882c22",
+      "sha256": "68d4b24a363e51a1192ea3a03cba1e48a8a8e1f02c770db3dac8cb6b66c8451b",
       "bytes": 45932
     },
     "alimentador/rutas_participaciones.npz": {

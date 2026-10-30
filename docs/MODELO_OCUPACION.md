@@ -11,7 +11,7 @@ sección 8 describe la extensión al resto. Todas las respuestas traen `metodo_a
 | Corredores | O-D por ruta y sentido, acotada a orígenes | **Paradero** (el código ATU ya trae el sentido) | Accuracy 0,93 cumple; **F1-macro 0,67 no** |
 | Alimentadores | Carga crítica junto a la estación de integración | Ruta y sentido | Accuracy 0,86 cumple; **F1-macro 0,52 no** |
 
-**Versión serializada: 1.1.0** (`models/manifest.json`, sección 8.6).
+**Versión serializada: 1.1.1** (`models/manifest.json`, sección 8.6).
 
 ## 1. Problema
 
@@ -188,8 +188,13 @@ con el sufijo del código. Contra los largos publicados: 404 da 25,9/23,0 km (Wi
 solo corredor entre Estación Central y Caquetá; luego el eje norte hasta Chimpu Ocllo. Dos ubicaciones
 corregidas:
 - **Andrés Reyes** no está en el GeoJSON; se ubica a una cuadra de Canaval y Moreyra.
-- **Bulevar** está en Barranco, entre Estadio Unión y Balta. El GeoJSON la ubica por error en la
-  ampliación norte: **hay que corregir ese punto en el mapa de la app**.
+- **Bulevar** está en Barranco (Av. Francisco Bolognesi con Calle Pazos), entre Estadio Unión y
+  Balta. El GeoJSON la ubicaba en Comas: el geocodificado había tomado el paradero homónimo de los
+  alimentadores Santo Domingo y Tungasuca. **Corregido en v1.1.1** en `puntos_troncal.geojson` y
+  `puntos_metropolitano_servicios.geojson`, con la coordenada (-12.148722, -77.020138) de Wikipedia,
+  que queda a 16 m del trazado OSM. Se contrastó con metrolima.info y Moovit (estaciones vecinas) y
+  con las listas oficiales de la ampliación norte, que no incluyen ninguna estación Bulevar. El
+  paradero de alimentador "Bulevar" de Comas es correcto y no se tocó.
 
 ### 8.2 Vehículos
 
@@ -284,11 +289,11 @@ El v1 marcaba "Saturado" por percentiles **dentro de cada franja**, así que el 
 capacidad, así que la saturación se concentra en la punta y en los tramos que llegan al centro. Las
 clases cambian en la mayoría de las horas: el acuerdo es de 34 % a 68 %.
 
-### 8.6 Serialización v1.1.0
+### 8.6 Serialización (1.1.0 → 1.1.1)
 
-`python scripts/serializar_v1_1_0.py`:
+`python scripts/serializar_modelos.py <versión> "<cambios>"` (el manifiesto guarda el historial de versiones):
 
-- Sube a **1.1.0** la versión de las capas y de los `model_card.json`. Cada card trae la sección
+- Sube a la versión indicada (1.1.0 = aforo v2; 1.1.1 = corrección de Bulevar) la versión de las capas y de los `model_card.json`. Cada card trae la sección
   `aforo_v2` con método, archivos, métricas de test y comparación con v1.
 - Genera las salidas de referencia del 2025-12-15 (`referencia_v1_1_0.csv`, y el detalle por
   paradero en corredores).

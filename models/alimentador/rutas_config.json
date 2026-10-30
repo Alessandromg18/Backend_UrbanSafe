@@ -1,6 +1,6 @@
 {
  "sistema": "alimentador",
- "version": "1.1.0",
+ "version": "1.1.1",
  "tipo": "rutas_carga_critica",
  "metodo": "carga máxima del bus = subidas del sentido por hora / buses por hora: en un alimentador casi todos los viajes empiezan o terminan en la estación de integración, así que el tramo junto al terminal lleva a todos los pasajeros del sentido (cota superior cuando hay viajes locales)",
  "rutas": {

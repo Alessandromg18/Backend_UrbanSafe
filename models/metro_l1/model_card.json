@@ -1,6 +1,6 @@
 {
   "nombre": "urbansafe-demanda-metro_l1",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "sistema": "metro_l1",
   "titulo": "Metro Línea 1",
   "grano": "estacion",
@@ -533,7 +533,7 @@
     "paros de transportistas no se anticipan: el detector de anomalías los marca después"
   ],
   "aforo_v2": {
-    "version": "1.1.0",
+    "version": "1.1.1",
     "metodo": "gravedad doblemente acotada (Furness) por hora; bajadas por viaje de retorno",
     "capa": "linea_config.json",
     "artefactos": [

@@ -69,6 +69,6 @@ Si no se pasa destino, el backend informa el **sentido más cargado** (criterio 
 | Corredores | **Automático:** el código del paradero ATU ya trae el sentido | Ocupación del bus al salir de ese paradero (`current.paradero`, `current.sentido` = "hacia …") |
 | Alimentadores | Sin destino: el sentido más cargado; `por_sentido` trae "saliendo de / hacia la estación de integración" | Ocupación en el tramo más cargado de la ruta (junto al terminal) |
 
-El marcador de la estación **Bulevar** del Metropolitano en `puntos_troncal.geojson` está en la
-ampliación norte, pero la estación real queda en Barranco (entre Estadio Unión y Balta). Hay que
-corregir esa coordenada para el mapa.
+La estación **Bulevar** del Metropolitano ya está en su ubicación real, en Barranco (corregido en
+el backend, v1.1.1). Como el mapa toma las estaciones de `/api/stations`, no hay que cambiar nada
+en el frontend.

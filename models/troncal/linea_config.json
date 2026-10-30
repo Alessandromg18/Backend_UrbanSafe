@@ -1,6 +1,6 @@
 {
   "sistema": "troncal",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "estaciones": [
     "Matellini",
     "Rosario de Villa",
@@ -54,7 +54,7 @@
     1.496,
     2.557,
     3.293,
-    3.921,
+    3.761,
     4.549,
     5.283,
     6.141,

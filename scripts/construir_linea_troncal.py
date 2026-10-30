@@ -14,6 +14,8 @@ Topología (proyección de las estaciones sobre la relación OSM "Regular C" y c
   corredor (posición = proyección sobre la recta Central-Caquetá). Simplificación declarada.
 - Eje norte y ampliación: Caquetá -> Naranjal -> Chimpu Ocllo, en orden de latitud.
 - "Naranjal Alimentador" comparte ubicación con Naranjal (no hay viajes entre ambas).
+- Bulevar (Barranco, entre Estadio Unión y Balta): coordenada corregida en el GeoJSON (antes
+  apuntaba al paradero de alimentador homónimo en Comas).
 """
 from __future__ import annotations
 
@@ -86,12 +88,9 @@ def main() -> None:
     # eje sur: distancia a lo largo del trazado OSM
     base = tr.project(Point(coord["Matellini"]))
     for e in SUR:
-        if e in coord and e != "Bulevar":
+        if e in coord:
             km[e] = (tr.project(Point(coord[e])) - base) * (km_grado + 111.32) / 2
     km["Andrés Reyes"] = km["Canaval y Moreyra"] + 0.15
-    # Bulevar (Barranco) está entre Estadio Unión y Balta (servicio Regular C en OSM); el GeoJSON la
-    # ubica por error en la ampliación norte (otro punto OSM con el mismo nombre)
-    km["Bulevar"] = (km["Union"] + km["Balta"]) / 2
     # centro: proyección sobre la recta Estación Central - Caquetá
     c0, c1 = coord["Estacion Central"], coord["Caqueta"]
     recta = LineString([c0, c1])

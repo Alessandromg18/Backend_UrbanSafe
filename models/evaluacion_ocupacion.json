@@ -27,7 +27,7 @@
       "Asientos": 0.1719,
       "Saturado": 0.079
     },
-    "segundos": 2.6,
+    "segundos": 2.3,
     "RNF_01": {
       "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
       "cumple": true
@@ -100,7 +100,7 @@
       "De_pie": 0.3672,
       "Saturado": 0.1743
     },
-    "segundos": 3.8,
+    "segundos": 2.7,
     "RNF_01": {
       "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
       "cumple": true
@@ -173,7 +173,7 @@
       "De_pie": 0.3131,
       "Saturado": 0.0155
     },
-    "segundos": 12.9,
+    "segundos": 7.4,
     "nivel_paradero": {
       "lightgbm": {
         "n": 987102,
@@ -266,7 +266,7 @@
       "De_pie": 0.116,
       "Saturado": 0.0271
     },
-    "segundos": 2.6,
+    "segundos": 2.8,
     "RNF_01": {
       "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
       "cumple": false
