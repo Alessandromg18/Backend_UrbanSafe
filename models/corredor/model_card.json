@@ -1,6 +1,6 @@
 {
   "nombre": "urbansafe-demanda-corredor",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "sistema": "corredor",
   "titulo": "Corredores Complementarios",
   "grano": "ruta",
@@ -519,7 +519,7 @@
     "paros de transportistas no se anticipan: el detector de anomalías los marca después"
   ],
   "aforo_v2": {
-    "version": "1.2.0",
+    "version": "1.3.0",
     "metodo": "gravedad acotada a orígenes por ruta y sentido (Ortúzar ec. 5.16); bajadas por viaje de retorno con el paradero del sentido opuesto; beta = 0 (ME2)",
     "capa": "rutas_config.json",
     "artefactos": [

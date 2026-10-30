@@ -234,8 +234,10 @@ def match_trip():
                 seen.add(key)
                 unique_routes.append(r)
 
-        # Ordenar de menor a mayor distancia total de caminata
+        # Ordenar por caminata y luego por costo generalizado (caminata + espera + aforo + viaje)
         unique_routes.sort(key=lambda x: x["origin_walk_m"] + x["dest_walk_m"])
+        from services.recomendacion_viaje import ordenar_rutas
+        unique_routes, recomendacion_viaje = ordenar_rutas(unique_routes, request.args.get("hour", type=int))
 
         if len(unique_routes) == 0 and "warning" not in debug_info:
             debug_info["warning"] = "Se encontraron paraderos en ambos extremos, pero ninguna ruta directa conecta ambos puntos sin transbordo."
@@ -245,7 +247,8 @@ def match_trip():
             "destination": {"lat": dest_lat, "lon": dest_lon, "resolved_name": dest_name},
             "radius_meters": radius,
             "diagnostic": debug_info,
-            "found_routes": unique_routes
+            "found_routes": unique_routes,
+            "recomendacion_viaje": recomendacion_viaje
         }), 200
 
     except Exception as e:

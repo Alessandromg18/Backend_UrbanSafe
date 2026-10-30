@@ -115,7 +115,9 @@ def _filas_paradero(par: pd.DataFrame, serie: str, paradero: str, filas_serie: p
              "banda80_hi": None, "crowding_index": f.ocupacion, "aforo": f.aforo, "eta_min": f.eta,
              "eta2_min": f.eta + h, "recomendacion": f.recomendacion, "intervalo_min": h,
              "metodo_aforo": "ocupacion_od_v2_paradero", "sentido_critico": f.sentido,
-             "carga": f.carga, "bajadas_est": f.bajadas_est, "paradero": f.paradero, "nombre": f.nombre}
+             "carga": f.carga, "bajadas_est": f.bajadas_est, "paradero": f.paradero, "nombre": f.nombre,
+             "p_no_subir": f.p_no_subir, "viaje_min": f.viaje_min, "multiplicador": f.multiplicador,
+             "alternativa": f.alternativa}
             for f, h in zip(x.itertuples(), hw)]
 
 

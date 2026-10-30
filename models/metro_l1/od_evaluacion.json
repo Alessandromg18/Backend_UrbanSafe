@@ -190,9 +190,9 @@
       "Asientos": 0.1719,
       "Saturado": 0.079
     },
-    "recomendacion_acuerdo": 0.9699,
-    "recomendacion_siempre_abordar": 0.9674,
-    "segundos_por_dia_pronostico_mas_od": 0.011,
+    "recomendacion_acuerdo": 0.9979,
+    "recomendacion_siempre_abordar": 0.9986,
+    "segundos_por_dia_pronostico_mas_od": 0.012,
     "RNF_01": {
       "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
       "cumple": true

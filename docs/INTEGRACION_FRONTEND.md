@@ -72,3 +72,16 @@ Si no se pasa destino, el backend informa el **sentido más cargado** (criterio 
 La estación **Bulevar** del Metropolitano ya está en su ubicación real, en Barranco (corregido en
 el backend, v1.1.1). Como el mapa toma las estaciones de `/api/stations`, no hay que cambiar nada
 en el frontend.
+
+## Recomendación por costo generalizado (v1.3.0)
+
+- `GET /api/geo/match-trip` devuelve `found_routes` **ordenadas por costo generalizado**: caminata,
+  espera, aforo y tiempo a bordo. La primera es la recomendada. Cada ruta trae `aforo`,
+  `espera_min`, `viaje_min`, `caminata_min` y `costo_generalizado_min`. Las opciones en sentido
+  contrario (la vereda de enfrente) vienen con `sentido_contrario: true` al final de la lista y no
+  se deben ofrecer.
+- `recomendacion_viaje.mensaje`: texto listo para mostrar cuando conviene otro paradero, otra ruta
+  u otra bajada. Ejemplo: "Te conviene tomar la 201 en vez de la 204; …".
+- Cada hora de predicción trae `probabilidad_no_subir`, que es la probabilidad de que el vehículo
+  que le toca al usuario llegue lleno. En corredores, si `recommendation = cambiar_paradero`, el
+  campo `alternativa` dice en qué paradero anterior subir, a cuántos metros y cuánto ahorra.

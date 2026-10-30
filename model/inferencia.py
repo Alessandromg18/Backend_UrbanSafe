@@ -274,9 +274,14 @@ class ModeloSistema:
             out["bajadas_est"] = r.bajadas
         for s in ("asc", "desc"):
             clase = r.clase[s]
+            # recomendación por costo generalizado (model/recomendacion.py); regla U solo de respaldo
+            rec = r.recomendacion.get(s) if r.recomendacion else None
             out.update({f"carga_{s}": r.carga_tren[s], f"ocupacion_{s}": r.ocupacion[s],
                         f"aforo_{s}": clase, f"eta_{s}": r.espera_min[s],
-                        f"recomendacion_{s}": recomendar(clase, r.espera_min[s])})
+                        f"recomendacion_{s}": rec if rec is not None else recomendar(clase, r.espera_min[s])})
+            if r.p_no_subir:
+                out.update({f"p_no_subir_{s}": r.p_no_subir[s], f"viaje_{s}": r.viaje_min[s],
+                            f"multiplicador_{s}": r.multiplicador[s]})
         # Sin sentido conocido se informa el sentido más cargado (criterio conservador)
         critico_asc = np.nan_to_num(r.ocupacion["asc"], nan=-1) >= np.nan_to_num(r.ocupacion["desc"], nan=-1)
         elegir = lambda k: np.where(critico_asc, out[f"{k}_asc"], out[f"{k}_desc"])  # noqa: E731
@@ -287,6 +292,9 @@ class ModeloSistema:
             "eta_min": elegir("eta"), "eta2_min": elegir("eta") + hw,
             "recomendacion": elegir("recomendacion"), "metodo_aforo": "ocupacion_od_v2",
         })
+        if r.p_no_subir:
+            out.update({"p_no_subir": elegir("p_no_subir"), "viaje_min": elegir("viaje"),
+                        "multiplicador": elegir("multiplicador")})
         assert all(v.shape == (S, 24) for v in out.values() if isinstance(v, np.ndarray))
         return out, r
 
@@ -302,7 +310,9 @@ class ModeloSistema:
                 "unidad": serie, "paradero": cod, "nombre": d["nombre"], "sentido": d["sentido"],
                 "fecha_hora": horas, "subidas_est": d["subidas"], "bajadas_est": d["bajadas"],
                 "carga": d["carga_tren"], "ocupacion": d["ocupacion"], "aforo": d["clase"],
-                "eta": d["espera_min"], "recomendacion": recomendar(d["clase"][None], d["espera_min"][None])[0]}))
+                "eta": d["espera_min"], "recomendacion": d["recomendacion"],
+                "p_no_subir": d["p_no_subir"], "viaje_min": d["viaje_min"],
+                "multiplicador": d["multiplicador"], "alternativa": d["alternativa"]}))
         return pd.concat(filas, ignore_index=True)
 
     # ── anomalías (residuo diario vs media de 4 semanas, z robusto) ──

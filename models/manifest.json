@@ -1,8 +1,8 @@
 {
-  "version": "1.2.0",
-  "fecha": "2026-10-30T01:50:12-05:00",
-  "commit_base": "a59ecc9",
-  "cambios": "Alimentadores: LightGBM por ruta × sentido (F1-macro 0,48 -> 0,54 fuera de muestra); evaluación de los 4 sistemas fuera de muestra; parámetro ruta en la API",
+  "version": "1.3.0",
+  "fecha": "2026-10-30T10:46:16-05:00",
+  "commit_base": "5b10231",
+  "cambios": "Recomendación por costo generalizado (Ortúzar ec. 10.18 + hacinamiento de Whelan y Crockett): P(no subir) con irregularidad del servicio, paradero anterior en corredores y match-trip ordenado por costo, sin paraderos en sentido contrario",
   "historial": [
     {
       "version": "1.1.0",
@@ -13,6 +13,11 @@
       "version": "1.1.1",
       "fecha": "2026-10-30T01:07:32-05:00",
       "cambios": "Coordenada de la estación Bulevar corregida (Barranco); troncal reconstruido"
+    },
+    {
+      "version": "1.2.0",
+      "fecha": "2026-10-30T01:50:12-05:00",
+      "cambios": "Alimentadores: LightGBM por ruta × sentido (F1-macro 0,48 -> 0,54 fuera de muestra); evaluación de los 4 sistemas fuera de muestra; parámetro ruta en la API"
     }
   ],
   "dia_referencia_verificacion": "2025-12-15",
@@ -53,20 +58,20 @@
       "bytes": 1198
     },
     "metro_l1/linea_config.json": {
-      "sha256": "7b96bbae645e765762ea10aa7174b3693a66866c46e7bbc6e5f4b9a0a1cb2b63",
+      "sha256": "567f5cb3241bdeb2deb026f96b0c95b7052f2821ac248325dd45452821d07040",
       "bytes": 8157
     },
     "metro_l1/model_card.json": {
-      "sha256": "93456d3ce52b00aed3a1fd726e630a5eae36d5d895d9932c3ced1922e90c7345",
+      "sha256": "128dd874708df8364f8e4d90f694af0df86f164e81c9cc384fabc1e1e69d1202",
       "bytes": 17943
     },
     "metro_l1/od_evaluacion.json": {
-      "sha256": "0850f907a724120cdf6303fa8d37a654c403abe699104c810a77959e45bce917",
+      "sha256": "a5615368cd584db7596996f6976f09ea4726dfc0699c333086fa6c7d4d8ff0e7",
       "bytes": 5426
     },
     "metro_l1/referencia_salida_v2.csv": {
-      "sha256": "06117ee32ea79f50be75671f5ae794afad68dfe3f5709fa5b146b59999e1f0d6",
-      "bytes": 206640
+      "sha256": "52f4d0fa4c83f799418aac299eda8bb1d64d89b08ac2ca098eb60de97490d651",
+      "bytes": 261331
     },
     "troncal/aforo_histgb.joblib": {
       "sha256": "e792253d8bc7bfcd771a32cbb8cda6dbf412bb44e2c52112227ab31bde25f7b5",
@@ -97,16 +102,16 @@
       "bytes": 1543
     },
     "troncal/linea_config.json": {
-      "sha256": "9ff0abcd3ef4db2c84003f30741b5d1b6c9e930ff82346301304461d86dec84c",
+      "sha256": "9698c04b50b66eccdfb206db6ad513853d84fa6f5767d17ea070500115761450",
       "bytes": 6889
     },
     "troncal/model_card.json": {
-      "sha256": "46ae2b13990c10b84449ff0d57601c4488caf810617395449ff4b0384b75a20c",
+      "sha256": "c5a01d427cdbea16c59e8f2d221db0a61a0cc6af7f4643864ff0652bb0480710",
       "bytes": 18271
     },
     "troncal/referencia_salida_v2.csv": {
-      "sha256": "43097b5c5fdaa2528e6d83d0e87775d3719583a2d1e2a7e6ad548450e3e9d569",
-      "bytes": 386769
+      "sha256": "ca10b8227e872cf5f11b03fd1f8504372d8368f38c45dcd37232ab4ce6d846ca",
+      "bytes": 516388
     },
     "corredor/aforo_histgb.joblib": {
       "sha256": "9aeaca2915d44925b0671e9130d455ca89896f672d91c64a209d7e6b9d57c4e2",
@@ -137,19 +142,19 @@
       "bytes": 828
     },
     "corredor/model_card.json": {
-      "sha256": "d2d760512a25d2510fa366ca9f36009095e130c53b78e494d97207fff8317a4d",
+      "sha256": "3d0723304a376ec6449369af11e8577599ccef379e21f68555f316741f709c8c",
       "bytes": 17664
     },
     "corredor/referencia_salida_v2.csv": {
-      "sha256": "8943ce420121a060fc30c650f33df58a68808c289b1a2deb69587dc93c8611b3",
-      "bytes": 95978
+      "sha256": "27f8786090ddd339fe5b749cff979ecaa1d215bb039d77dbc0e67c4d0aee4ff3",
+      "bytes": 128949
     },
     "corredor/referencia_salida_v2_paradas.parquet": {
-      "sha256": "4d6e47d2d7805399b1cf8197152a8e04300cadf01896263129fac5256b32799d",
-      "bytes": 710745
+      "sha256": "c2d2ff4a7e28a1747ac53da5767675873edc32cc012645ff065999ae1e409d64",
+      "bytes": 1110812
     },
     "corredor/rutas_config.json": {
-      "sha256": "04730068662ac5236d0c90affc9964ec41ab29158ef1745c4081d395297b59cb",
+      "sha256": "5f4069041e946505413116ac781f7629eeb41c4379e8caa874110d36f2d2f293",
       "bytes": 108666
     },
     "corredor/rutas_participaciones.npz": {
@@ -197,15 +202,15 @@
       "bytes": 4394073
     },
     "alimentador/model_card.json": {
-      "sha256": "45eeb32440ce781d0889ec3c9dda5256b2fc8cd09e427d58cc85dda147d531fb",
+      "sha256": "36d094bb825aa8beaa107dfd0bd91d2c65dfb41959d50da2731d3ed4176bc97b",
       "bytes": 18147
     },
     "alimentador/referencia_salida_v2.csv": {
-      "sha256": "2fe6013e0472069a31bd58c6d286d9716cdf92da9aae8470a4f7d0f21053ca66",
-      "bytes": 190439
+      "sha256": "8dd6c3d80d36d35f3b1a521d3efb73bdcd992703c0d07f00f4c4b6253ff81163",
+      "bytes": 246246
     },
     "alimentador/rutas_config.json": {
-      "sha256": "7cd5fbc402915abec9dfb0ff780f02ab761ed734b07a94824f728294833c1f4c",
+      "sha256": "481dcab3e06dfc5307b120fc2e31420e91d687a0bf77f095789d66f965378ac2",
       "bytes": 45932
     },
     "alimentador/rutas_participaciones.npz": {

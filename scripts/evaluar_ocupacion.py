@@ -107,12 +107,23 @@ def pronosticos_fuera_de_muestra(sistema: str, dias=DIAS, refit: int = 7) -> dic
     return out
 
 
+def _recomendacion(acc) -> dict:
+    """AC-03: acuerdo entre la recomendación con demanda pronosticada y con demanda observada."""
+    ro = np.concatenate(acc["obs"]["r"]).astype(str)
+    return {"acuerdo_lightgbm": round(float((np.concatenate(acc["lgb"]["r"]).astype(str) == ro).mean()), 4),
+            "acuerdo_media_4sem": round(float((np.concatenate(acc["base"]["r"]).astype(str) == ro).mean()), 4),
+            "siempre_abordar": round(float((ro == "abordar").mean()), 4),
+            "balanced_accuracy_lightgbm": round(balanced_accuracy_score(ro, np.concatenate(acc["lgb"]["r"]).astype(str)), 4),
+            "distribucion_observada": pd.Series(ro).value_counts(normalize=True).round(4).to_dict(),
+            "AC_03": "acuerdo >= 0.80"}
+
+
 def evaluar(sistema: str) -> dict:
     m = ModeloSistema.cargar(sistema, verificar_hash=False)
     capa = m.linea
     ctx = pd.read_parquet(RAIZ / "data" / "context" / f"{sistema}_2025.parquet")
     oos = pronosticos_fuera_de_muestra(sistema)
-    acc = {k: {"c": [], "l": []} for k in ("obs", "lgb", "base")}
+    acc = {k: {"c": [], "l": [], "r": []} for k in ("obs", "lgb", "base")}
     acc_p = {k: {"c": [], "l": []} for k in ("obs", "lgb", "base")}
     dist = []
     t0 = time.time()
@@ -132,6 +143,7 @@ def evaluar(sistema: str) -> dict:
             for k, r in res.items():
                 acc[k]["c"].append(r.clase[slot][serv])
                 acc[k]["l"].append(r.carga_tren[slot][serv])
+                acc[k]["r"].append(r.recomendacion[slot][serv])
             dist.append(res["obs"].clase[slot][serv])
         if res["obs"].paradas:
             for clave, po in res["obs"].paradas.items():
@@ -145,6 +157,7 @@ def evaluar(sistema: str) -> dict:
             "lightgbm": metricas(acc["obs"]["c"], acc["lgb"]["c"], acc["obs"]["l"], acc["lgb"]["l"]),
             "media_4sem": metricas(acc["obs"]["c"], acc["base"]["c"], acc["obs"]["l"], acc["base"]["l"]),
         },
+        "recomendacion": _recomendacion(acc),
         "distribucion_clases_observadas": pd.Series(np.concatenate(dist).astype(str)).value_counts(normalize=True).round(4).to_dict(),
         "segundos": round(time.time() - t0, 1),
     }

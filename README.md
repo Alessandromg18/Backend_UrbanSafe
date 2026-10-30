@@ -40,7 +40,7 @@ y el pipeline de ingesta y entrenamiento. **La app no usa ese flujo de base de d
 esta API con archivos versionados. El pipeline de entrenamiento y los datos limpios del repo del
 curso sí son la fuente de los artefactos de `models/` y de `data/context/`.
 - **Tests:** `pip install pytest && python -m pytest tests` (algoritmo de Furness contra la Tabla 5.7 de Ortúzar y Willumsen, calendario, API y latencia P95).
-- **Versión de modelos: 1.2.0** (`models/manifest.json`; la API verifica los sha256 al cargar).
+- **Versión de modelos: 1.3.0** (`models/manifest.json`; la API verifica los sha256 al cargar).
 - **Regenerar o evaluar:** `python scripts/construir_linea_metro_l1.py`, `python scripts/construir_linea_troncal.py`, `python scripts/construir_rutas_bus.py --datos <DPD_project>/deliveries/week10/data_processed/clean`, `python scripts/entrenar_alimentador_sentido.py --datos <...>/clean`, `python scripts/evaluar_od_metro_l1.py`, `python scripts/evaluar_ocupacion.py` y `python scripts/serializar_modelos.py <versión> "<cambios>"`.
 
 

@@ -22,12 +22,23 @@
         "WMAPE_carga": 0.127
       }
     },
+    "recomendacion": {
+      "acuerdo_lightgbm": 0.9979,
+      "acuerdo_media_4sem": 0.9869,
+      "siempre_abordar": 0.9986,
+      "balanced_accuracy_lightgbm": 0.4997,
+      "distribucion_observada": {
+        "abordar": 0.9986,
+        "esperar_siguiente": 0.0014
+      },
+      "AC_03": "acuerdo >= 0.80"
+    },
     "distribucion_clases_observadas": {
       "De_pie": 0.7491,
       "Asientos": 0.1719,
       "Saturado": 0.079
     },
-    "segundos": 1.4,
+    "segundos": 1.7,
     "RNF_01": {
       "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
       "cumple": true
@@ -95,12 +106,23 @@
         "WMAPE_carga": 0.1836
       }
     },
+    "recomendacion": {
+      "acuerdo_lightgbm": 0.9683,
+      "acuerdo_media_4sem": 0.9535,
+      "siempre_abordar": 0.8938,
+      "balanced_accuracy_lightgbm": 0.9092,
+      "distribucion_observada": {
+        "abordar": 0.8938,
+        "esperar_siguiente": 0.1062
+      },
+      "AC_03": "acuerdo >= 0.80"
+    },
     "distribucion_clases_observadas": {
       "Asientos": 0.4584,
       "De_pie": 0.3672,
       "Saturado": 0.1743
     },
-    "segundos": 2.6,
+    "segundos": 2.5,
     "RNF_01": {
       "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
       "cumple": true
@@ -168,12 +190,23 @@
         "WMAPE_carga": 0.2791
       }
     },
+    "recomendacion": {
+      "acuerdo_lightgbm": 0.9908,
+      "acuerdo_media_4sem": 0.9671,
+      "siempre_abordar": 0.9906,
+      "balanced_accuracy_lightgbm": 0.5943,
+      "distribucion_observada": {
+        "abordar": 0.9906,
+        "esperar_siguiente": 0.0094
+      },
+      "AC_03": "acuerdo >= 0.80"
+    },
     "distribucion_clases_observadas": {
       "Asientos": 0.6714,
       "De_pie": 0.3131,
       "Saturado": 0.0155
     },
-    "segundos": 14.8,
+    "segundos": 12.4,
     "nivel_paradero": {
       "lightgbm": {
         "n": 987102,
@@ -261,12 +294,23 @@
         "WMAPE_carga": 0.6432
       }
     },
+    "recomendacion": {
+      "acuerdo_lightgbm": 0.9771,
+      "acuerdo_media_4sem": 0.967,
+      "siempre_abordar": 0.9769,
+      "balanced_accuracy_lightgbm": 0.5914,
+      "distribucion_observada": {
+        "abordar": 0.9769,
+        "esperar_siguiente": 0.0231
+      },
+      "AC_03": "acuerdo >= 0.80"
+    },
     "distribucion_clases_observadas": {
       "Asientos": 0.8569,
       "De_pie": 0.116,
       "Saturado": 0.0271
     },
-    "segundos": 1.8,
+    "segundos": 2.5,
     "RNF_01": {
       "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
       "cumple": false

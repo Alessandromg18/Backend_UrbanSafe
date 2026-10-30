@@ -117,3 +117,14 @@ def test_latencia_p95_en_caliente(client):
         assert client.get(f"/api/predictions/metro_l1/{est}?dia=2026-10-29&hour=8").status_code == 200
         t.append(time.perf_counter() - t0)
     assert np.percentile(t, 95) <= 2.0      # AC-04
+
+
+def test_match_trip_descarta_sentido_contrario_y_ordena_por_costo(client):
+    d = client.get("/api/geo/match-trip?origin_lat=-12.0890&origin_lon=-77.0350&dest_lat=-12.0780"
+                   "&dest_lon=-77.0880&radius=800&hour=7").get_json()
+    rutas = d["found_routes"]
+    assert any(r.get("sentido_contrario") for r in rutas)
+    validas = [r["costo_generalizado_min"] for r in rutas if r.get("costo_generalizado_min") is not None]
+    assert validas == sorted(validas)                         # primero la de menor costo generalizado
+    assert not rutas[0].get("sentido_contrario")              # la app nunca propone la vereda equivocada
+    assert d["recomendacion_viaje"]["mejor"]["boarding_station"] == rutas[0]["boarding_station"]

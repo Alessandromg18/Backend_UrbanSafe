@@ -46,12 +46,18 @@ def _item(fila: dict, sentido: str | None, sentidos: dict | None) -> dict:
         "eta_min": _num(eta, 1),
         "eta2_min": _num(eta2, 1),
         "recommendation": rec,
+        # P(el vehículo que te toca llega sin espacio), tiempo medio a bordo y multiplicador de
+        # hacinamiento: las entradas del costo generalizado de la recomendación
+        "probabilidad_no_subir": _num(fila.get(f"p_no_subir{sfx}") if sfx else fila.get("p_no_subir"), 3),
+        "tiempo_viaje_min": _num(fila.get(f"viaje{sfx}") if sfx else fila.get("viaje_min"), 1),
+        "multiplicador_hacinamiento": _num(fila.get(f"multiplicador{sfx}") if sfx else fila.get("multiplicador"), 2),
     }
     if fila.get("metodo_aforo") == "ocupacion_od_v2_paradero":
         out.update({"sentido": fila.get("sentido_critico"), "paradero": fila.get("nombre"),
                     "pasajeros_por_tren": _num(fila.get("carga"), 0),
                     "bajadas_estimadas": _num(fila.get("bajadas_est"), 1),
-                    "intervalo_min": _num(hw, 1)})
+                    "intervalo_min": _num(hw, 1),
+                    "alternativa": fila.get("alternativa") if rec == "cambiar_paradero" else None})
     elif fila.get("metodo_aforo") == "ocupacion_od_v2":
         out.update({
             "sentido": (sentidos or {}).get(sentido) if sfx else fila.get("sentido_critico"),

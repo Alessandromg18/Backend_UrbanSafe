@@ -11,7 +11,7 @@ sección 8 describe la extensión al resto. Todas las respuestas traen `metodo_a
 | Corredores | O-D por ruta y sentido, acotada a orígenes | **Paradero** (el código ATU ya trae el sentido) | Accuracy 0,92 cumple; **F1-macro 0,66 no** |
 | Alimentadores | Carga crítica junto a la estación de integración; demanda por ruta × sentido | Ruta y sentido | Accuracy 0,86 cumple; **F1-macro 0,54 no** |
 
-**Versión serializada: 1.2.0** (`models/manifest.json`, sección 8.7). Todas las métricas de test
+**Versión serializada: 1.3.0** (`models/manifest.json`, sección 8.7). La recomendación se calcula por costo generalizado (sección 8.9). Todas las métricas de test
 son **fuera de muestra** (sección 8.4).
 
 ## 1. Problema
@@ -153,7 +153,7 @@ y cada 7 días (ver la nota de la sección 8.4).
 - **Distribución de clases observadas:** De pie 75 %, Asientos 17 %, Saturado 8 %.
 - **Latencia:** pronóstico más O-D en 0,02 s por día. En la API, P95 en caliente < 2 s (AC-04, ver
   `tests/test_api.py`).
-- **Regla U:** el acuerdo es 97,7 %, pero "siempre abordar" ya acierta 96,7 %, así que la métrica
+- **Regla U (v1.2 y anteriores; reemplazada en v1.3.0, ver sección 8.9):** el acuerdo es 97,7 %, pero "siempre abordar" ya acierta 96,7 %, así que la métrica
   aporta poco y hay que leerla con cuidado.
 
 ## 6. Limitaciones
@@ -344,7 +344,7 @@ El v1 marcaba "Saturado" por percentiles **dentro de cada franja**, así que el 
 capacidad, así que la saturación se concentra en la punta y en los tramos que llegan al centro. Las
 clases cambian en la mayoría de las horas: el acuerdo es de 34 % a 68 %.
 
-### 8.7 Serialización (1.1.0 → 1.2.0)
+### 8.7 Serialización (1.1.0 → 1.3.0)
 
 `python scripts/serializar_modelos.py <versión> "<cambios>"` (el manifiesto guarda el historial de versiones):
 
@@ -353,7 +353,7 @@ clases cambian en la mayoría de las horas: el acuerdo es de 34 % a 68 %.
 - Genera las salidas de referencia del 2025-12-15 (`referencia_salida_v2.csv`, y el detalle por
   paradero en corredores).
 - Versiones: 1.1.0 = aforo v2; 1.1.1 = corrección de Bulevar; 1.2.0 = alimentadores por ruta ×
-  sentido y evaluación fuera de muestra.
+  sentido y evaluación fuera de muestra; 1.3.0 = recomendación por costo generalizado.
 - Escribe `models/manifest.json` con sha256 y tamaño de 47 artefactos y de los 5 archivos de
   datos de entrada.
 
@@ -378,6 +378,56 @@ nombres exactos. Solo afecta a la ruta de respaldo v1, que ya no se usa en ning�
 - **Corredores:** entre el 2 % y el 4 % de la demanda de las rutas 204, 404 y 406 está en paraderos
   sin coordenadas y no entra en el perfil de carga.
 
+### 8.9 Recomendación por costo generalizado (v1.3.0)
+
+**Problema.** La regla U de la v1 decía "esperar" solo si la **hora siguiente** estaba menos
+llena. Con un vehículo cada 1,5–3 minutos, el siguiente cae en la misma hora, así que respondía
+"abordar" en el 95–99 % de las horas. Además, `match-trip` ordenaba las rutas solo por caminata.
+
+**Método** (`model/recomendacion.py`, `services/recomendacion_viaje.py`). Cada opción se valora en
+minutos equivalentes:
+
+    costo = 2 · caminata + 2 · espera + multiplicador(hacinamiento) · tiempo a bordo
+
+| Componente | Fuente |
+|---|---|
+| Pesos de espera y caminata = 2 | Ortúzar y Willumsen §10.6.2.4, ec. 10.18: el usuario los percibe "dos o tres veces" más que el tiempo a bordo |
+| Multiplicador de hacinamiento: sentado 1,00 → 1,63 y de pie 1,53 → 2,04 entre 0 y 6 pasajeros/m² de pie | Whelan y Crockett, citados en Li y Hensher (2013) |
+| Tiempo a bordo de quien sube en cada estación o paradero | Matriz origen-destino (media ponderada por viajes) |
+| P(el vehículo que te toca llega sin espacio) | La carga de cada vehículo es proporcional al intervalo que lo precede, y el pasajero cae más en los intervalos largos. Con intervalos Gamma de coeficiente de variación cv (el mismo de la espera): Q(k+1, k·capacidad/carga), con k = 1/cv² |
+
+**Decisión por estación, paradero y hora:**
+
+| Recomendación | Cuándo |
+|---|---|
+| "Esperar el siguiente" | P(no subir) ≥ 0,5 |
+| "Cambiar de paradero" (corredores) | Subir en un paradero anterior de la misma ruta, a ≤ 600 m, ahorra ≥ 3 min equivalentes contando la caminata (el bus viene más vacío) |
+| "Abordar" | En otro caso |
+
+**Decisión por viaje (`match-trip`):**
+- Las rutas candidatas se ordenan por costo generalizado, con la ocupación de la hora actual en el
+  sentido del viaje.
+- Se descartan los paraderos **en sentido contrario**, es decir, la vereda de enfrente.
+- Si la mejor opción no es la más cercana y ahorra 3 min o más, se explica: "Te conviene subir en
+  X / tomar la ruta Y / bajar en Z…".
+
+**Resultados.**
+
+| Medición | Resultado |
+|---|---|
+| 40 viajes de corredores en hora punta | La primera opción vieja (menor caminata) estaba **en sentido contrario en 28 (70 %)**; la nueva nunca. En 9 viajes recomienda otra ruta o paradero, con un ahorro mediano de 6 min equivalentes |
+| Recomendación por estación (días laborables de test, observado) | Troncal: "esperar el siguiente" en 15 % de las horas punta. Alimentadores: 6 %. Corredores: "cambiar de paradero" en 0,3 % y "esperar" en 0,2 %. Metro: 0 % (los trenes van en promedio al 75–85 % de su capacidad y pasan con regularidad: subir al que llega sí es lo mejor) |
+| AC-03 (acuerdo entre recomendación pronosticada y observada, fuera de muestra) | Metro 99,8 %, troncal 96,8 %, corredores 99,1 %, alimentadores 97,7 % |
+
+AC-03 solo es informativo en el troncal: allí "siempre abordar" acertaría 89 %, y el modelo llega
+a 96,8 % (balanced accuracy 0,91). En los demás sistemas, "abordar" es casi siempre la respuesta
+correcta a nivel de estación. **El valor de la v1.3.0 está en la elección del viaje** (qué paradero
+y qué ruta) y en no mandar al usuario al sentido equivocado.
+
+**Limitación.** Con promedios horarios no se ven las puntas de 15 minutos dentro de la hora. Por
+ejemplo, el operador del Metropolitano pide evitar las 7:15–8:15. Sin datos más finos o GPS, la
+recomendación por estación es conservadora.
+
 ## 9. Fuentes
 
 - Ortúzar, J. de D. y Willumsen, L. G. (2008). *Modelos de Transporte*. PUbliCan, Universidad de Cantabria.
@@ -390,6 +440,7 @@ nombres exactos. Solo afecta a la ruta de respaldo v1, que ya no se usa en ning�
 - Línea 1 (longitud, tiempo de extremo a extremo): <https://es.wikipedia.org/wiki/L%C3%ADnea_1_del_Metro_de_Lima_y_Callao>
 - TCQSM 2.ª ed., Parte 5 (densidades de pie): <https://onlinepubs.trb.org/onlinepubs/tcrp/docs/tcrp100/Part5.pdf>
 - Li, Z. y Hensher, D. (2013). Crowding in Public Transport: A Review of Objective and Subjective Measures: <https://digitalcommons.usf.edu/cgi/viewcontent.cgi?article=1065&context=jpt>
+- Whelan, G. y Crockett, J. (2009). An investigation of the willingness to pay to reduce rail overcrowding; valores citados en Li y Hensher (2013), enlace arriba.
 - Ceder, A. (2016). *Public Transit Planning and Operation* (2.ª ed.). CRC Press: método del punto de carga máxima.
 - ATU, bus troncal de 164 pasajeros (47 sentados): <https://www.gob.pe/institucion/atu/noticias/895166-atu-nuevo-bus-articulado-del-metropolitano-podra-transportar-a-164-pasajeros>
 - BRTData, Lima (117 buses/h en punta, 25,5 km/h): <https://brtdata.org/location/latin_america/peru/lima/?lang=es>
