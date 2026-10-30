@@ -1,6 +1,6 @@
 {
   "nombre": "urbansafe-demanda-corredor",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "sistema": "corredor",
   "titulo": "Corredores Complementarios",
   "grano": "ruta",
@@ -519,7 +519,7 @@
     "paros de transportistas no se anticipan: el detector de anomalías los marca después"
   ],
   "aforo_v2": {
-    "version": "1.1.1",
+    "version": "1.2.0",
     "metodo": "gravedad acotada a orígenes por ruta y sentido (Ortúzar ec. 5.16); bajadas por viaje de retorno con el paradero del sentido opuesto; beta = 0 (ME2)",
     "capa": "rutas_config.json",
     "artefactos": [
@@ -531,14 +531,15 @@
     "evaluacion_test": {
       "dias": "2025-11-01 a 2025-12-31 (61 días)",
       "nivel": "nivel_paradero",
+      "protocolo": "fuera de muestra: LightGBM reentrenado solo con días previos, refit cada 7 días",
       "lightgbm": {
         "n": 987102,
-        "accuracy": 0.9262,
-        "f1_macro": 0.6695,
-        "f1_weighted": 0.9244,
-        "balanced_accuracy": 0.6299,
-        "MAE_pasajeros_vehiculo": 3.62,
-        "WMAPE_carga": 0.1826
+        "accuracy": 0.9192,
+        "f1_macro": 0.6552,
+        "f1_weighted": 0.9181,
+        "balanced_accuracy": 0.6259,
+        "MAE_pasajeros_vehiculo": 3.88,
+        "WMAPE_carga": 0.1958
       },
       "media_4sem": {
         "n": 987102,

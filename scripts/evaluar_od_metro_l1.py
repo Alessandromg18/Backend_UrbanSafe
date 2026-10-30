@@ -10,7 +10,8 @@ Salidas: ``models/metro_l1/od_evaluacion.json`` y ``docs/EVALUACION_OD_METRO_L1.
    (atracciones con ruido, beta distinto de 0); el estimador solo ve las subidas.
 2. Sensibilidad a beta y simetría de la matriz diaria con datos reales 2025.
 3. Contraste con datos públicos (Ositrán, horario oficial, capacidad).
-4. Pronóstico en test (2025-11-01 a 2025-12-31): LightGBM -> ocupación vs ocupación calculada
+4. Pronóstico en test (2025-11-01 a 2025-12-31): LightGBM reentrenado sin datos del futuro
+   (rolling-origin, refit cada 7 días) -> ocupación vs ocupación calculada
    con las subidas observadas; baseline media_4sem por la misma cadena (RNF-01).
 """
 from __future__ import annotations
@@ -155,6 +156,8 @@ def contraste() -> dict:
 def evaluar_pronostico() -> dict:
     m = ModeloSistema.cargar(SIS, verificar_hash=False)
     dias = pd.date_range("2025-11-01", "2025-12-31", freq="D")
+    from evaluar_ocupacion import pronosticos_fuera_de_muestra
+    OOS = pronosticos_fuera_de_muestra(SIS, dias)
     y_obs, y_lgb, y_base = {s: [] for s in ("asc", "desc")}, {s: [] for s in ("asc", "desc")}, {s: [] for s in ("asc", "desc")}
     c_obs, c_lgb, c_base = [], [], []
     rec_obs, rec_lgb = [], []
@@ -162,7 +165,7 @@ def evaluar_pronostico() -> dict:
     for d in dias:
         P, p = panel_desde_contexto(SIS, CTX[m.series], d)
         t = time.perf_counter()
-        pt, _, _ = m.pronostico_puntual(P, p, "ligero")
+        pt = OOS[pd.Timestamp(d)]          # LightGBM reentrenado sin datos del futuro
         base, _ = V.f_media_4sem(P, p)
         obs = CTX.loc[d:d + pd.Timedelta(hours=23), m.series].to_numpy(float).T
         so, sl, sb = (m.salida_operativa(m.series, Y, d) for Y in (obs, pt, base))

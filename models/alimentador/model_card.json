@@ -1,6 +1,6 @@
 {
   "nombre": "urbansafe-demanda-alimentador",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "sistema": "alimentador",
   "titulo": "Alimentadores",
   "grano": "ruta",
@@ -523,26 +523,27 @@
     "paros de transportistas no se anticipan: el detector de anomalías los marca después"
   ],
   "aforo_v2": {
-    "version": "1.1.1",
+    "version": "1.2.0",
     "metodo": "carga máxima del bus = subidas del sentido por hora / buses por hora: en un alimentador casi todos los viajes empiezan o terminan en la estación de integración, así que el tramo junto al terminal lleva a todos los pasajeros del sentido (cota superior cuando hay viajes locales)",
     "capa": "rutas_config.json",
     "artefactos": [
       "rutas_config.json",
       "rutas_participaciones.npz"
     ],
-    "modelo_demanda_produccion": "lightgbm (modo ligero)",
+    "modelo_demanda_produccion": "lightgbm por ruta × sentido (demanda_sentido.json, lightgbm_sentido.txt)",
     "salida": "ocupacion_{asc,desc}, carga_{asc,desc}, aforo_{asc,desc}, eta_{asc,desc}, sentido_critico; crowding_index y aforo = sentido más cargado (compatibles con v1)",
     "evaluacion_test": {
       "dias": "2025-11-01 a 2025-12-31 (61 días)",
       "nivel": "nivel_serie",
+      "protocolo": "fuera de muestra: LightGBM reentrenado solo con días previos, refit cada 7 días",
       "lightgbm": {
         "n": 50508,
-        "accuracy": 0.8612,
-        "f1_macro": 0.5233,
-        "f1_weighted": 0.8522,
-        "balanced_accuracy": 0.4962,
-        "MAE_pasajeros_vehiculo": 5.05,
-        "WMAPE_carga": 0.4996
+        "accuracy": 0.8569,
+        "f1_macro": 0.5389,
+        "f1_weighted": 0.8489,
+        "balanced_accuracy": 0.509,
+        "MAE_pasajeros_vehiculo": 5.31,
+        "WMAPE_carga": 0.5252
       },
       "media_4sem": {
         "n": 50508,

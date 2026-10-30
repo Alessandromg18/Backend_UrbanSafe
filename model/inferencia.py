@@ -94,7 +94,12 @@ class ModeloSistema:
         self.conformal_ligero = leer_json(carpeta / "conformal_ligero.json")
         self.anomalias = leer_json(carpeta / "anomalias.json")
         self.linea = cargar_capa(carpeta)   # capa de ocupación (None = índice v1)
+        # Demanda por ruta × sentido (alimentadores, v1.2.0): si existe, reemplaza al LightGBM por
+        # serie; el total de cada serie es la suma de sus sentidos
+        self.sentido = leer_json(carpeta / "demanda_sentido.json") if (carpeta / "demanda_sentido.json").exists() else None
+        self.conformal_sentido = (leer_json(carpeta / self.sentido["conformal"]) if self.sentido else None)
         self._lgb = None
+        self._lgb_sentido = None
 
     # ── carga ──
     @classmethod
@@ -125,6 +130,33 @@ class ModeloSistema:
             import lightgbm as lgb
             self._lgb = lgb.Booster(model_file=str(self.carpeta / "lightgbm.txt"))
         return self._lgb
+
+    def _booster_sentido(self):
+        if self._lgb_sentido is None:
+            import lightgbm as lgb
+            self._lgb_sentido = lgb.Booster(model_file=str(self.carpeta / self.sentido["archivo"]))
+        return self._lgb_sentido
+
+    def pronostico_por_sentido(self, contexto: pd.DataFrame, dia) -> np.ndarray:
+        """(series_sentido, 24) con el LightGBM por ruta × sentido."""
+        cols = self.sentido["series_sentido"]
+        faltan = [c for c in cols if c not in contexto.columns]
+        if faltan:
+            raise ValueError(f"faltan series por sentido en el contexto: {faltan[:3]}")
+        Pd, q = panel_desde_contexto(self.sistema, contexto[cols], dia)
+        pred = self._booster_sentido().predict(V.features_dia(Pd.Y, q, Pd.index[q]))
+        return np.clip(pred, 0, None).reshape(len(cols), 24)
+
+    def agrupar_sentidos(self, yd: np.ndarray) -> tuple[np.ndarray, dict]:
+        """(total por serie (S, 24), {serie: (sentidos, 24)} en el orden de la capa de ocupación)."""
+        cols = self.sentido["series_sentido"]
+        total, por_serie = [], {}
+        for s in self.series:
+            filas = {c.split("|", 1)[1]: yd[j] for j, c in enumerate(cols) if c.split("|", 1)[0] == s}
+            total.append(np.sum(list(filas.values()), axis=0) if filas else np.zeros(24))
+            unidades = self.linea.rutas[s]["unidades"] if self.linea is not None and hasattr(self.linea, "rutas") else list(filas)
+            por_serie[s] = np.stack([filas.get(u, np.zeros(24)) for u in unidades])
+        return np.stack(total), por_serie
 
     # ── pronóstico ──
     def _pronostico_modelo(self, nombre: str, P: V.Panel, p: int):
@@ -184,12 +216,18 @@ class ModeloSistema:
         if faltan:
             raise ValueError(f"faltan unidades en el contexto: {faltan[:5]}")
         P, p = panel_desde_contexto(self.sistema, contexto[self.series], dia)
-        pt, Q, usado = self.pronostico_puntual(P, p, modo)
-        if usado == "lightgbm" and modo == "ligero":
-            conformal = self.conformal_ligero
+        observado = None
+        if self.sentido is not None and modo == "ligero":
+            pt, observado = self.agrupar_sentidos(self.pronostico_por_sentido(contexto, dia))
+            Q, usado, conformal = None, "lightgbm_sentido", self.conformal_sentido
         else:
-            conformal = self.conformal if usado == self.principal else {"tipo": "residuo", "por_hora": {}}
+            pt, Q, usado = self.pronostico_puntual(P, p, modo)
+            if usado == "lightgbm" and modo == "ligero":
+                conformal = self.conformal_ligero
+            else:
+                conformal = self.conformal if usado == self.principal else {"tipo": "residuo", "por_hora": {}}
         lo, hi = self._banda(pt, Q if usado == self.principal else None, V.escala_local(P, p), conformal)
+        # subidas por sentido (si el modelo las pronostica) en lugar del reparto con participaciones
         dia = P.index[p]
         S = P.S
         base = {
@@ -199,7 +237,7 @@ class ModeloSistema:
             "validaciones_pron": pt.ravel(),
             "banda80_lo": lo.ravel(), "banda80_hi": hi.ravel(),
         }
-        operativa, r = self._operativa(P.series, pt, dia)
+        operativa, r = self._operativa(P.series, pt, dia, observado)
         operativa = {k: (v.ravel() if isinstance(v, np.ndarray) else v) for k, v in operativa.items()}
         df = pd.DataFrame({**base, **operativa, "modelo": usado, "tipo_dia": V.tipo_evento(dia)})
         if not con_paradas:
@@ -215,7 +253,7 @@ class ModeloSistema:
         """
         return self._operativa(series, Yd, dia)[0]
 
-    def _operativa(self, series: list, Yd: np.ndarray, dia):
+    def _operativa(self, series: list, Yd: np.ndarray, dia, por_unidad: dict | None = None):
         dia = pd.Timestamp(dia)
         if self.linea is None:
             crow = V.crowding_dia(self.crowding, list(series), Yd, dia)
@@ -227,7 +265,8 @@ class ModeloSistema:
                     "recomendacion": V.recomendaciones(clases[None], eta[None])[0],
                     "metodo_aforo": "presion_abordaje_v1"}, None
 
-        r = self.linea.aplicar(Yd, list(series), V.bucket_dia(dia))
+        r = (self.linea.aplicar(Yd, list(series), V.bucket_dia(dia), por_unidad) if por_unidad is not None
+             else self.linea.aplicar(Yd, list(series), V.bucket_dia(dia)))
         S = len(series)
         hw = r.intervalo_min
         out = {"intervalo_min": hw}

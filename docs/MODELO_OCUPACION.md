@@ -4,14 +4,15 @@
 corredores complementarios y alimentadores. Las secciones 2 a 6 detallan el piloto de Metro L1 y la
 sección 8 describe la extensión al resto. Todas las respuestas traen `metodo_aforo = ocupacion_od_v2`.
 
-| Sistema | Capa | Nivel que ve el usuario | RNF-01 en test |
+| Sistema | Capa | Nivel que ve el usuario | RNF-01 en test (fuera de muestra) |
 |---|---|---|---|
-| Metro L1 | Línea O-D doblemente acotada | Estación y sentido | Cumple (F1-macro 0,92) |
-| Troncal | Línea O-D doblemente acotada | Estación y sentido | Cumple (F1-macro 0,94) |
-| Corredores | O-D por ruta y sentido, acotada a orígenes | **Paradero** (el código ATU ya trae el sentido) | Accuracy 0,93 cumple; **F1-macro 0,67 no** |
-| Alimentadores | Carga crítica junto a la estación de integración | Ruta y sentido | Accuracy 0,86 cumple; **F1-macro 0,52 no** |
+| Metro L1 | Línea O-D doblemente acotada | Estación y sentido | Cumple (F1-macro 0,86) |
+| Troncal | Línea O-D doblemente acotada | Estación y sentido | Cumple (F1-macro 0,93) |
+| Corredores | O-D por ruta y sentido, acotada a orígenes | **Paradero** (el código ATU ya trae el sentido) | Accuracy 0,92 cumple; **F1-macro 0,66 no** |
+| Alimentadores | Carga crítica junto a la estación de integración; demanda por ruta × sentido | Ruta y sentido | Accuracy 0,86 cumple; **F1-macro 0,54 no** |
 
-**Versión serializada: 1.1.1** (`models/manifest.json`, sección 8.6).
+**Versión serializada: 1.2.0** (`models/manifest.json`, sección 8.7). Todas las métricas de test
+son **fuera de muestra** (sección 8.4).
 
 ## 1. Problema
 
@@ -140,11 +141,12 @@ hipótesis de viaje de retorno. β = 0 es la que minimiza la asimetría.
 ### 5.4 Pronóstico en test (2025-11-01 a 2025-12-31, 61 días)
 
 La "verdad" es la ocupación calculada con las subidas observadas por la misma cadena O-D. Se mide
-cuánto del error de ocupación aporta el pronóstico.
+cuánto del error de ocupación aporta el pronóstico. LightGBM se reentrena **solo con días previos**
+y cada 7 días (ver la nota de la sección 8.4).
 
 | Modelo | MAE (pasajeros por tren) | WMAPE de la carga | Accuracy | F1-macro | F1-weighted |
 |---|---:|---:|---:|---:|---:|
-| **LightGBM** | **22,3** | **0,049** | **0,960** | **0,922** | **0,960** |
+| **LightGBM** | **40,6** | **0,089** | **0,931** | **0,856** | **0,929** |
 | media_4sem (baseline) | 58,2 | 0,127 | 0,918 | 0,830 | 0,917 |
 
 - **RNF-01** (accuracy ≥ 0,75 y F1-macro ≥ 0,72): **cumple**.
@@ -166,7 +168,7 @@ cuánto del error de ocupación aporta el pronóstico.
 - **β sin calibrar:** no hay una distribución de longitudes de viaje observada; con una encuesta
   O-D o con datos de tarjeta con destino, se calibraría con Hyman (`od_matrix.calibrar_hyman`).
 - **Otros sistemas:** las limitaciones propias del troncal, los corredores y los alimentadores están
-  en la sección 8.7.
+  en la sección 8.8.
 
 ## 8. Extensión a troncal, corredores y alimentadores
 
@@ -254,15 +256,23 @@ Reproducible con `python scripts/evaluar_ocupacion.py`; los resultados quedan en
 por estación en Metro y troncal, por **paradero** en corredores y por sentido en alimentadores. El
 error incluye el pronóstico de demanda y el reparto a paraderos.
 
+**Protocolo fuera de muestra (corrección de v1.2.0).** El `lightgbm.txt` serializado se entrenó con
+todo 2025, que incluye los días de test. Las versiones 1.1.x lo usaban directamente para evaluar,
+así que sus métricas eran **in-sample y optimistas** (Metro decía F1-macro 0,92). Desde v1.2.0, la
+evaluación reentrena LightGBM con la configuración de producción solo con los días anteriores a
+cada día de test, cada 7 días (rolling-origin, como la evaluación v2 de week09). El modelo
+serializado (con todo 2025) es el que sirve 2026 con el día homólogo.
+
 | Sistema (nivel) | Modelo | Accuracy | F1-macro | F1-weighted | WMAPE de la carga | MAE (pas./vehículo) |
 |---|---|---:|---:|---:|---:|---:|
-| Metro L1 (estación × sentido) | **LightGBM** | **0,960** | **0,922** | **0,960** | **0,049** | 22,3 |
+| Metro L1 (estación × sentido) | **LightGBM** | **0,931** | **0,856** | **0,929** | **0,089** | 40,6 |
 | | media_4sem | 0,918 | 0,830 | 0,917 | 0,127 | 58,2 |
-| Troncal (estación × sentido) | **LightGBM** | **0,946** | **0,943** | **0,946** | **0,074** | 5,1 |
+| Troncal (estación × sentido) | **LightGBM** | **0,931** | **0,926** | **0,932** | **0,095** | 6,6 |
 | | media_4sem | 0,908 | 0,899 | 0,908 | 0,184 | 12,7 |
-| Corredores (paradero × sentido) | **LightGBM** | **0,926** | **0,670** | **0,924** | **0,183** | 3,6 |
+| Corredores (paradero × sentido) | **LightGBM** | **0,919** | **0,655** | **0,918** | **0,196** | 3,9 |
 | | media_4sem | 0,891 | 0,555 | 0,897 | 0,298 | 5,9 |
-| Alimentadores (ruta × sentido) | **LightGBM** | **0,861** | **0,523** | **0,852** | **0,500** | 5,1 |
+| Alimentadores (ruta × sentido) | **LightGBM por sentido** | **0,857** | **0,539** | **0,849** | **0,525** | 5,3 |
+| | LightGBM por ruta (v1.1) | 0,842 | 0,480 | 0,835 | 0,573 | 5,8 |
 | | media_4sem | 0,821 | 0,467 | 0,821 | 0,643 | 6,5 |
 
 - **LightGBM supera al baseline en los cuatro sistemas.**
@@ -272,10 +282,55 @@ error incluye el pronóstico de demanda y el reparto a paraderos.
     tres clases por igual, y "Saturado" es rara en buses: 1,5 % de las horas en corredores y 2,7 % en
     alimentadores, así que unos pocos errores en esa clase lo bajan mucho.
 - **Alimentadores:** con la demanda real, el reparto por sentido da F1-macro 0,81. El error viene
-  del **pronóstico de demanda** de esas rutas (WMAPE 0,40 desde la v1); mejorarlo exige reentrenar
-  ese modelo.
+  del **pronóstico de demanda** de esas rutas; se reentrenó (sección 8.5) y subió a 0,54, pero sigue
+  por debajo del umbral.
 
-### 8.5 Comparación con el proxy v1 (subidas observadas, test)
+### 8.5 Reentrenamiento del pronóstico de alimentadores (v1.2.0)
+
+`python scripts/entrenar_alimentador_sentido.py --datos <DPD_project>/deliveries/week10/data_processed/clean`
+
+**Diagnóstico** (test, modelo por ruta, fuera de muestra):
+- El error horario es WMAPE 0,40. El ruido Poisson de conteos tan bajos explica solo unos 0,07.
+- Con el total diario perfecto y el perfil horario del modelo, el error queda en 0,27; con el
+  perfil perfecto y el total del modelo, en 0,16. **El problema es el reparto horario**, no el
+  volumen del día.
+- La demanda cae entre 40 % y 55 % de enero a diciembre en varias rutas, y hay rupturas: Trapiche
+  −75 % en julio, Villa El Salvador +40 % en septiembre.
+
+**Alternativas probadas** con el protocolo sin fuga: early stopping ≤ 30-09 / 01–14-10, selección en
+validación 15–31-10 y reporte en test con refit semanal.
+
+| Alternativa | WMAPE validación | WMAPE test | Nivel |
+|---|---:|---:|---|
+| Perfil horario histórico × total LightGBM (4–12 semanas) | 0,311–0,329 | 0,354–0,371 | ruta |
+| LightGBM por ruta: parámetros actuales / regularizado / Poisson / peso reciente (semivida 45–90 días) | 0,414–0,422 | 0,404–0,407 | ruta |
+| **LightGBM por ruta × sentido** (46 series) | **0,478** | **0,483** | ruta × sentido |
+| LightGBM por ruta repartido por sentido (v1.1) | 0,484 | 0,545 | ruta × sentido |
+| Promedio de ambos | 0,476 | 0,500 | ruta × sentido |
+
+(Las dos primeras filas están en otro nivel, ruta, y no son comparables con las tres últimas.)
+
+- Ni los perfiles históricos ni los hiperparámetros mejoran: todas las variantes quedan dentro de
+  ±2 %.
+- **Lo que mejora es modelar cada sentido**: los dos sentidos tienen perfiles opuestos (mañana hacia
+  la estación de integración, tarde desde ella) y el reparto fijo pierde la variación de cada día.
+- **Regla de selección, fijada antes de ver el test:** el modelo más simple a menos de 1 % del mejor
+  en validación. Se eligió el modelo por sentido (0,478 frente a 0,476 del promedio).
+- **En test:** −11 % de error de demanda por sentido; F1-macro de aforo de 0,48 a 0,54; WMAPE de la
+  carga de 0,57 a 0,53.
+
+En producción, `ModeloSistema` usa `lightgbm_sentido.txt` (627 árboles). El total por ruta es la
+suma de los sentidos, y cada sentido entra directo a la capa de ocupación, sin participaciones. Las
+bandas del 80 % se recalibraron con residuos fuera de muestra de los últimos 14 días; en los días
+restantes del test su cobertura real fue de **81,2 %**.
+
+**Por qué sigue sin cumplir RNF-01:** el reparto horario de un alimentador varía mucho de un día a
+otro (más que el ruido de conteo), y la clase "Saturado" es rara (2,7 % de las horas), así que el
+F1-macro la penaliza mucho. Los siguientes pasos razonables son:
+- covariables de la troncal (llegadas a la estación de integración, que la matriz O-D ya estima);
+- o pronosticar por franjas de 2–3 horas, que es la resolución que el usuario necesita para decidir.
+
+### 8.6 Comparación con el proxy v1 (subidas observadas, test)
 
 | Sistema | Acuerdo de clase v1–v2 | "Saturado" en punta (7, 8, 18, 19 h): v1 → v2 | "Saturado" en valle (11–14 h): v1 → v2 |
 |---|---:|---:|---:|
@@ -289,15 +344,17 @@ El v1 marcaba "Saturado" por percentiles **dentro de cada franja**, así que el 
 capacidad, así que la saturación se concentra en la punta y en los tramos que llegan al centro. Las
 clases cambian en la mayoría de las horas: el acuerdo es de 34 % a 68 %.
 
-### 8.6 Serialización (1.1.0 → 1.1.1)
+### 8.7 Serialización (1.1.0 → 1.2.0)
 
 `python scripts/serializar_modelos.py <versión> "<cambios>"` (el manifiesto guarda el historial de versiones):
 
-- Sube a la versión indicada (1.1.0 = aforo v2; 1.1.1 = corrección de Bulevar) la versión de las capas y de los `model_card.json`. Cada card trae la sección
+- Sube a la versión indicada la versión de las capas y de los `model_card.json`. Cada card trae la sección
   `aforo_v2` con método, archivos, métricas de test y comparación con v1.
-- Genera las salidas de referencia del 2025-12-15 (`referencia_v1_1_0.csv`, y el detalle por
+- Genera las salidas de referencia del 2025-12-15 (`referencia_salida_v2.csv`, y el detalle por
   paradero en corredores).
-- Escribe `models/manifest.json` con sha256 y tamaño de 44 artefactos y de los 5 archivos de
+- Versiones: 1.1.0 = aforo v2; 1.1.1 = corrección de Bulevar; 1.2.0 = alimentadores por ruta ×
+  sentido y evaluación fuera de muestra.
+- Escribe `models/manifest.json` con sha256 y tamaño de 47 artefactos y de los 5 archivos de
   datos de entrada.
 
 La API carga los modelos con `verificar_hash=True`: si un artefacto cambió, no arranca.
@@ -308,7 +365,7 @@ de referencia en los cuatro sistemas.
 con las series en 4 estaciones de Metro L1 (tildes y mayúsculas) ni en 2 del troncal. Ahora usa los
 nombres exactos. Solo afecta a la ruta de respaldo v1, que ya no se usa en ningún sistema.
 
-### 8.7 Limitaciones adicionales
+### 8.8 Limitaciones adicionales
 
 - **Oferta derivada:** las flotas son públicas pero no siempre recientes (Azul en Wikipedia, troncal
   de 2013). La ocupación escala con 1/frecuencia: si la flota real es 20 % menor, la ocupación es

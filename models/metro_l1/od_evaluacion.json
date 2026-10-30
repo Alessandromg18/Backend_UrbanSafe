@@ -170,12 +170,12 @@
     "dias_test": "2025-11-01 a 2025-12-31 (61 días)",
     "verdad": "ocupación calculada con las subidas observadas por la misma cadena O-D",
     "lightgbm": {
-      "MAE_pasajeros_tren": 22.3,
-      "WMAPE": 0.0488,
-      "accuracy": 0.9602,
-      "f1_macro": 0.9219,
-      "f1_weighted": 0.9596,
-      "balanced_accuracy": 0.9081
+      "MAE_pasajeros_tren": 40.6,
+      "WMAPE": 0.0885,
+      "accuracy": 0.9309,
+      "f1_macro": 0.8558,
+      "f1_weighted": 0.9291,
+      "balanced_accuracy": 0.84
     },
     "media_4sem": {
       "MAE_pasajeros_tren": 58.2,
@@ -190,9 +190,9 @@
       "Asientos": 0.1719,
       "Saturado": 0.079
     },
-    "recomendacion_acuerdo": 0.9771,
+    "recomendacion_acuerdo": 0.9699,
     "recomendacion_siempre_abordar": 0.9674,
-    "segundos_por_dia_pronostico_mas_od": 0.025,
+    "segundos_por_dia_pronostico_mas_od": 0.011,
     "RNF_01": {
       "umbral": "accuracy >= 0.75 y F1-macro >= 0.72",
       "cumple": true

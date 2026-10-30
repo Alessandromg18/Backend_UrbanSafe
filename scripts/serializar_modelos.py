@@ -63,10 +63,13 @@ def actualizar_cards() -> None:
             "metodo": cfg.get("metodo") or cfg["od"]["metodo"],
             "capa": capa,
             "artefactos": [capa] + (["rutas_participaciones.npz"] if capa == "rutas_config.json" else []),
-            "modelo_demanda_produccion": "lightgbm (modo ligero)",
+            "modelo_demanda_produccion": ("lightgbm por ruta × sentido (demanda_sentido.json, lightgbm_sentido.txt)"
+                                          if (carpeta / "demanda_sentido.json").exists() else "lightgbm (modo ligero)"),
             "salida": "ocupacion_{asc,desc}, carga_{asc,desc}, aforo_{asc,desc}, eta_{asc,desc}, "
                       "sentido_critico; crowding_index y aforo = sentido más cargado (compatibles con v1)",
-            "evaluacion_test": {"dias": ev["dias_test"], "nivel": nivel, **e[nivel],
+            "evaluacion_test": {"dias": ev["dias_test"], "nivel": nivel,
+                                "protocolo": "fuera de muestra: LightGBM reentrenado solo con días previos, refit cada 7 días",
+                                **e[nivel],
                                 "RNF_01": e["RNF_01"]},
             "comparacion_proxy_v1": {k: e["comparacion_proxy_v1"][k] for k in
                                      ("acuerdo_clase", "saturado_en_punta", "saturado_en_valle", "distribucion")},

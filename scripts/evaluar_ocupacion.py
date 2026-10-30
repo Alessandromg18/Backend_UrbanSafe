@@ -7,7 +7,11 @@ Uso (desde la raíz del backend)::
 "Verdad": la ocupación que la misma cadena calcula con las subidas **observadas** (por estación
 en Metro L1 y troncal; por paradero en corredores; por sentido en alimentadores). Se compara con:
 
-- LightGBM (modelo de producción) -> reparto a paraderos/sentidos -> cadena de ocupación;
+- LightGBM con la configuración de producción (``lightgbm_meta.json``: parámetros y n_estimators)
+  pero **reentrenado sin datos del futuro**: antes de cada día de test solo ve datos anteriores y
+  se reentrena cada 7 días (rolling-origin, igual que la evaluación v2 de week09). El
+  ``lightgbm.txt`` serializado se entrenó hasta el 2025-12-31 y NO se usa aquí (sería in-sample).
+  Su pronóstico pasa por el reparto a paraderos/sentidos y la cadena de ocupación;
 - baseline media_4sem por la misma cadena.
 
 Así el error incluye el pronóstico de demanda y el reparto a paraderos. Salida:
@@ -76,24 +80,52 @@ def metricas(obs_c, pred_c, obs_l, pred_l) -> dict:
             "WMAPE_carga": round(float(np.abs(lp[ok] - lo[ok]).sum() / max(lo[ok].sum(), 1e-9)), 4)}
 
 
+def pronosticos_fuera_de_muestra(sistema: str, dias=DIAS, refit: int = 7) -> dict:
+    """{dia: (S, 24)} con LightGBM reentrenado solo con datos previos (rolling-origin).
+
+    En alimentadores (v1.2.0) el modelo es por ruta × sentido: devuelve {dia: (total (S, 24),
+    {serie: (sentidos, 24)})}.
+    """
+    carpeta = RAIZ / "models" / sistema
+    if (carpeta / "demanda_sentido.json").exists():
+        dem = json.loads((carpeta / "demanda_sentido.json").read_text(encoding="utf-8"))
+        ctx = pd.read_parquet(RAIZ / "data" / "context" / f"{sistema}_2025.parquet")[dem["series_sentido"]]
+        P, p_fin = panel_desde_contexto(sistema, ctx, "2025-12-31")
+        P.Y[p_fin:] = ctx.loc["2025-12-31"].to_numpy(float)
+        modelo = V.LGBMDirecto(n_estimators=dem["n_estimators"], refit_cada=refit, params=dem["parametros"])
+        m = ModeloSistema.cargar(sistema, verificar_hash=False)
+        return {pd.Timestamp(d): m.agrupar_sentidos(modelo(P, P.pos(d))[0]) for d in dias}
+    meta = json.loads((carpeta / "lightgbm_meta.json").read_text(encoding="utf-8"))
+    ctx = pd.read_parquet(RAIZ / "data" / "context" / f"{sistema}_2025.parquet")[meta["series"]]
+    P, p_fin = panel_desde_contexto(sistema, ctx, "2025-12-31")
+    P.Y[p_fin:] = ctx.loc["2025-12-31"].to_numpy(float)
+    modelo = V.LGBMDirecto(n_estimators=meta["n_estimators"], refit_cada=refit, params=meta["parametros"])
+    out = {}
+    for d in dias:
+        p = P.pos(d)
+        out[pd.Timestamp(d)] = modelo(P, p)[0]          # refit con datos [0, p) cada `refit` días
+    return out
+
+
 def evaluar(sistema: str) -> dict:
     m = ModeloSistema.cargar(sistema, verificar_hash=False)
     capa = m.linea
     ctx = pd.read_parquet(RAIZ / "data" / "context" / f"{sistema}_2025.parquet")
+    oos = pronosticos_fuera_de_muestra(sistema)
     acc = {k: {"c": [], "l": []} for k in ("obs", "lgb", "base")}
     acc_p = {k: {"c": [], "l": []} for k in ("obs", "lgb", "base")}
     dist = []
     t0 = time.time()
     for d in DIAS:
         P, p = panel_desde_contexto(sistema, ctx[m.series], d)
-        pt, _, _ = m.pronostico_puntual(P, p, "ligero")
+        pt, pt_u = oos[pd.Timestamp(d)] if isinstance(oos[pd.Timestamp(d)], tuple) else (oos[pd.Timestamp(d)], None)
         base, _ = V.f_media_4sem(P, p)
         Yobs = ctx.loc[d:d + pd.Timedelta(hours=23), m.series].to_numpy(float).T
         bucket = V.bucket_dia(d)
         obs_u = observado_unidades(sistema, capa, d) if hasattr(capa, "rutas") else None
         res = {"obs": capa.aplicar(Yobs, m.series, bucket, obs_u) if obs_u is not None
                else capa.aplicar(Yobs, m.series, bucket),
-               "lgb": capa.aplicar(pt, m.series, bucket),
+               "lgb": capa.aplicar(pt, m.series, bucket, pt_u) if pt_u is not None else capa.aplicar(pt, m.series, bucket),
                "base": capa.aplicar(base, m.series, bucket)}
         for slot in ("asc", "desc"):
             serv = res["obs"].clase[slot] != "Sin_servicio"
