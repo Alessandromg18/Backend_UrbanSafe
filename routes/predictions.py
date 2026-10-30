@@ -105,10 +105,15 @@ def _error(e: Exception):
     return jsonify({"error": f"Error interno: {e}"}), 500
 
 
-def _buscar_estacion(station_id):
+def _buscar_estacion(station_id, ruta: str | None = None):
+    """Estación por id. Un paradero de corredor puede servir a varias rutas con el mismo código:
+    ``ruta`` elige la del marcador que tocó el usuario (si no, la primera)."""
     objetivo = str(station_id).strip().lower()
-    return next((s for s in load_all_stations_into_memory()
-                 if str(s["id"]).strip().lower() == objetivo), None)
+    candidatas = [s for s in load_all_stations_into_memory() if str(s["id"]).strip().lower() == objetivo]
+    if ruta:
+        con_ruta = [s for s in candidatas if str((s.get("raw_properties") or {}).get("ruta")) == str(ruta)]
+        candidatas = con_ruta or candidatas
+    return candidatas[0] if candidatas else None
 
 
 @predictions_bp.route("/estacion/<path:station_id>", methods=["GET"])
@@ -116,13 +121,14 @@ def get_station_prediction(station_id):
     """Estado actual + pronóstico del día de una estación/paradero (una sola llamada).
 
     Query: ``dia`` (YYYY-MM-DD, por defecto hoy en Lima), ``hour`` (0-23, por defecto la hora
-    actual de Lima), ``hacia_id`` (id de la estación destino: define el sentido de viaje).
+    actual de Lima), ``hacia_id`` (id de la estación destino: define el sentido de viaje),
+    ``ruta`` (corredores: ruta del marcador cuando el código de paradero es compartido).
     ---
     tags:
       - Predictions
     """
     try:
-        est = _buscar_estacion(station_id)
+        est = _buscar_estacion(station_id, request.args.get("ruta"))
         if est is None:
             return jsonify({"error": f"Estación no encontrada: {station_id}"}), 404
         sistema, serie = serie_de_estacion(est)

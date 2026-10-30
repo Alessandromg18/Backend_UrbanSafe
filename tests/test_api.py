@@ -81,6 +81,18 @@ def test_corredor_paradero_con_sentido_propio(client):
     assert d["current"]["pasajeros_por_tren"] is not None and len(d["forecast"]) == 24
 
 
+def test_corredor_paradero_compartido_elige_ruta(client):
+    from routes.stations import load_all_stations_into_memory
+    from collections import Counter
+    est = [e for e in load_all_stations_into_memory() if e["system"] == "corredores" and e["model_series"]]
+    cuenta = Counter(e["id"] for e in est)
+    pid = next(i for i, n in cuenta.items() if n > 1 and len({e["model_series"] for e in est if e["id"] == i}) > 1)
+    rutas = sorted({e["model_series"] for e in est if e["id"] == pid})
+    for r in rutas:
+        d = client.get(f"/api/predictions/estacion/{pid}?dia=2026-10-29&hour=8&ruta={r}").get_json()
+        assert d["series"] == r
+
+
 def test_alimentador_ocupacion_por_sentido(client):
     d = client.get("/api/predictions/alimentador/Naranjal?dia=2026-10-29&hour=7").get_json()
     assert d["metodo_aforo"] == "ocupacion_od_v2"
